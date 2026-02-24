@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Moq;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models;
@@ -48,7 +49,7 @@ public class AuthServiceTests
             _userManagerMock.Object,
             _jwtServiceMock.Object,
             _httpContextAccessorMock.Object,
-            _jwtOptions
+            new OptionsWrapper<JwtOptions>(_jwtOptions)
         );
     }
 

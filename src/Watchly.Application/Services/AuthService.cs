@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models;
 using Watchly.Domain.Entities;
@@ -28,13 +29,13 @@ public class AuthService : IAuthService
         UserManager<User> userManager,
         IJwtService jwtService,
         IHttpContextAccessor httpContextAccessor,
-        JwtOptions jwtOptions)
+        IOptions<JwtOptions> jwtOptions)
     {
         _refreshTokenRepository = refreshTokenRepository;
         _userManager = userManager;
         _jwtService = jwtService;
         _httpContextAccessor = httpContextAccessor;
-        _jwtOptions = jwtOptions;
+        _jwtOptions = jwtOptions.Value;
     }
 
     public async Task<Result> RegisterUserAsync(User user, string password, CancellationToken ct)

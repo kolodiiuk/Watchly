@@ -12,7 +12,7 @@ using Watchly.Domain.Extensions;
 namespace Watchly.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public sealed class AuthController : BaseController<AuthController>
 {
     private readonly IAuthService _authService;
