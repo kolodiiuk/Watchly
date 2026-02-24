@@ -1,0 +1,26 @@
+﻿using Watchly.Application.Models;
+using Watchly.Domain.Entities;
+using Watchly.Domain.Utils;
+
+namespace Watchly.Application.Interfaces;
+
+public interface IAuthService
+{
+    Task<Result<User>> ValidateUserCredentialsAsync(string email, string password, CancellationToken ct);
+
+    Task<Result<TokensResponse>> GenerateTokensAsync(User user, CancellationToken ct);
+
+    Task<Result> RegisterUserAsync(User user, string password, CancellationToken ct);
+
+    Task<Result<RefreshTokenResponse>> RefreshTokenAsync(string token, CancellationToken ct);
+
+    Task<Result> SignOutAsync(string token, CancellationToken ct);
+
+    Task<Result<UserInfo>> GetUserAsync(Guid userId, CancellationToken ct);
+
+    Task<Result> ChangePasswordAsync(Guid userId, string oldPassword, string newPassword, CancellationToken ct);
+
+    Task<Result> SendPasswordResetConfirmationAsync(string reqEmail, CancellationToken ct);
+
+    Task<Result<bool>> ValidateResetPasswordRequestAsync(string token, CancellationToken ct);
+}

@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>disable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Watchly.Domain\Watchly.Domain.csproj" />
+      <ProjectReference Include="..\Watchly.Infrastructure\Watchly.Infrastructure.csproj" />
+    </ItemGroup>
+
+</Project>
