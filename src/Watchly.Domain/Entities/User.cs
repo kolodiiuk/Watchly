@@ -8,5 +8,9 @@ public sealed class User : IdentityUser<Guid>
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public ICollection<RefreshToken> RefreshTokens { get; set; }
+    public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+
+    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+
+    public ICollection<WatchList> WatchLists { get; set; } = new List<WatchList>();
 }

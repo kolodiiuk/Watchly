@@ -6,6 +6,8 @@ public sealed class Episode
 
     public int SeasonId { get; set; }
 
+    public int OrdinalNumber { get; set; }
+
     /// <summary>
     /// In minutes
     /// </summary>
@@ -15,5 +17,11 @@ public sealed class Episode
 
     public string PosterUrl { get; set; }
 
+    public DateTime? ReleaseDate { get; set; }
+
     public DateTime UpdatedAt { get; set; }
+
+    public Season Season { get; set; }
+
+    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }

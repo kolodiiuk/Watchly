@@ -5,4 +5,6 @@ public sealed class Keyword
     public int Id { get; set; }
 
     public string Name { get; set; }
+
+    public ICollection<KeywordTitle> KeywordTitles { get; set; } = new List<KeywordTitle>();
 }
