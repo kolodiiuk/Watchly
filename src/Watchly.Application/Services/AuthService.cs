@@ -5,6 +5,7 @@ using Watchly.Application.Interfaces;
 using Watchly.Application.Models;
 using Watchly.Domain.Entities;
 using Watchly.Domain.Utils;
+using Watchly.Infrastructure.Interfaces;
 
 namespace Watchly.Application.Services;
 
@@ -12,7 +13,7 @@ public class AuthService : LoggingService<AuthService>, IAuthService
 {
     private readonly IJwtService _jwtService;
 
-    private readonly IRefreshTokenService _refreshTokenService;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
 
     private readonly UserManager<User> _userManager;
 
@@ -20,14 +21,14 @@ public class AuthService : LoggingService<AuthService>, IAuthService
 
     public AuthService(
         UserManager<User> userManager,
-        IRefreshTokenService refreshTokenService,
+        IRefreshTokenRepository refreshTokenRepository,
         IJwtService jwtService,
         IOptions<JwtOptions> jwtOptions,
         ILogger<AuthService> logger)
         : base(logger)
     {
         _userManager = userManager;
-        _refreshTokenService = refreshTokenService;
+        _refreshTokenRepository = refreshTokenRepository;
         _jwtService = jwtService;
         _jwtOptions = jwtOptions.Value;
     }
@@ -77,7 +78,7 @@ public class AuthService : LoggingService<AuthService>, IAuthService
         string token, string ipAddress, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        var storedRefreshTokenRes = await _refreshTokenService.GetRefreshTokenByValueAsync(token, ct);
+        var storedRefreshTokenRes = await _refreshTokenRepository.GetRefreshTokenByValueAsync(token, ct);
         if (storedRefreshTokenRes.Failure || storedRefreshTokenRes.Value == null)
         {
             return Result<RefreshTokenResponse>.Fail("Invalid refresh token");
@@ -96,7 +97,7 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             {
                 var revoked = DateTime.UtcNow;
                 var revokedByIp = ipAddress;
-                await _refreshTokenService.RevokeTokenFamilyAsync(
+                await _refreshTokenRepository.RevokeTokenFamilyAsync(
                     storedRefreshToken.UserId, revoked, revokedByIp, ct);
 
                 return Result<RefreshTokenResponse>.Fail("Token reuse detected");
@@ -126,7 +127,7 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             CreatedByIp = ipAddress
         };
 
-        var addTokenRes = await _refreshTokenService.AddRefreshTokenWithRevocationAsync(
+        var addTokenRes = await _refreshTokenRepository.AddRefreshTokenWithRevocationAsync(
             userRefreshToken, storedRefreshToken, ipAddress, ct);
         if (addTokenRes.Failure)
         {
@@ -150,13 +151,13 @@ public class AuthService : LoggingService<AuthService>, IAuthService
         }
 
         ct.ThrowIfCancellationRequested();
-        var refreshTokenRes = await _refreshTokenService.GetRefreshTokenByValueAsync(token, ct);
+        var refreshTokenRes = await _refreshTokenRepository.GetRefreshTokenByValueAsync(token, ct);
 
         if (refreshTokenRes.IsSuccess && refreshTokenRes.Value != null)
         {
             refreshTokenRes.Value.Revoked = DateTime.UtcNow;
             refreshTokenRes.Value.RevokedByIp = ipAddress;
-            var rtUpdateRes = await _refreshTokenService.RevokeRefreshTokenByValueAsync(refreshTokenRes.Value, ct);
+            var rtUpdateRes = await _refreshTokenRepository.RevokeRefreshTokenByValueAsync(refreshTokenRes.Value, ct);
             if (rtUpdateRes.Failure)
             {
                 return Result.Fail($"Couldn't revoke token: {rtUpdateRes.Error}");
@@ -213,7 +214,7 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             CreatedByIp = ipAddress
         };
 
-        var addTokenRes = await _refreshTokenService.AddRefreshTokenAsync(newRefreshToken, ct);
+        var addTokenRes = await _refreshTokenRepository.AddRefreshTokenAsync(newRefreshToken, ct);
 
         return addTokenRes.Failure switch
         {

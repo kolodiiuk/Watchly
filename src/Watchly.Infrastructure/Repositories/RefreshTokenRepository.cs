@@ -1,18 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Npgsql;
-using Watchly.Application.Interfaces;
 using Watchly.Domain.Entities;
 using Watchly.Domain.Utils;
 using Watchly.Infrastructure.DbContexts;
+using Watchly.Infrastructure.Interfaces;
 
-namespace Watchly.Application.Services;
+namespace Watchly.Infrastructure.Repositories;
 
-public sealed class RefreshTokenService : LoggingService<RefreshTokenService>, IRefreshTokenService
+public sealed class RefreshTokenRepository : LoggingService<RefreshTokenRepository>, IRefreshTokenRepository
 {
     private readonly WatchlyDbContext _dbContext;
 
-    public RefreshTokenService(WatchlyDbContext dbContext, ILogger<RefreshTokenService> logger) : base(logger)
+    public RefreshTokenRepository(WatchlyDbContext dbContext, ILogger<RefreshTokenRepository> logger) : base(logger)
     {
         _dbContext = dbContext;
     }

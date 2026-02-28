@@ -8,12 +8,13 @@ using Watchly.Application.Models;
 using Watchly.Application.Services;
 using Watchly.Domain.Entities;
 using Watchly.Domain.Utils;
+using Watchly.Infrastructure.Interfaces;
 
-namespace Watchly.UnitTests;
+namespace Watchly.Tests.UnitTests;
 
 public class AuthServiceTests
 {
-    private readonly Mock<IRefreshTokenService> _refreshTokenServiceMock;
+    private readonly Mock<IRefreshTokenRepository> _refreshTokenServiceMock;
 
     private readonly Mock<UserManager<User>> _userManagerMock;
 
@@ -31,7 +32,7 @@ public class AuthServiceTests
 
     public AuthServiceTests()
     {
-        _refreshTokenServiceMock = new Mock<IRefreshTokenService>();
+        _refreshTokenServiceMock = new Mock<IRefreshTokenRepository>();
         _passwordHasherMock = new Mock<IPasswordHasher<User>>();
 
         var userStoreMock = new Mock<IUserStore<User>>();

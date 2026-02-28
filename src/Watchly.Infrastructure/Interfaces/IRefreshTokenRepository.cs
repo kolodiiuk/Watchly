@@ -1,9 +1,9 @@
 using Watchly.Domain.Entities;
 using Watchly.Domain.Utils;
 
-namespace Watchly.Application.Interfaces;
+namespace Watchly.Infrastructure.Interfaces;
 
-public interface IRefreshTokenService
+public interface IRefreshTokenRepository
 {
     Task<Result<RefreshToken>> GetRefreshTokenByValueAsync(string token, CancellationToken ct);
 

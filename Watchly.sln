@@ -12,7 +12,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Watchly.Domain", "src\Watch
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Watchly.Infrastructure", "src\Watchly.Infrastructure\Watchly.Infrastructure.csproj", "{72D6036C-216A-4A1E-8E01-3C1BA9E80508}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Watchly.UnitTests", "tests\Watchly.UnitTests\Watchly.UnitTests.csproj", "{89FF7B54-BBA5-4E9C-AB80-A026D1DEEAF5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Watchly.Tests", "tests\Watchly.Tests\Watchly.Tests.csproj", "{89FF7B54-BBA5-4E9C-AB80-A026D1DEEAF5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
