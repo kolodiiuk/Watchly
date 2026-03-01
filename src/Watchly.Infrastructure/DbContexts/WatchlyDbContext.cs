@@ -23,6 +23,8 @@ public class WatchlyDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid
 
     public DbSet<KeywordTitle> KeywordTitles { get; set; }
 
+    public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+
     public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     public DbSet<Season> Seasons { get; set; }
@@ -55,6 +57,10 @@ public class WatchlyDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid
     {
         base.OnConfiguring(optionsBuilder);
 
-        optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=watchly;Username=nk;Password=G4thgw4GRETG%$WEgr,dfe45");
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseNpgsql(
+                "Host=localhost;Port=5432;Database=watchly;Username=nk;Password=G4thgw4GRETG%$WEgr,dfe45");
+        }
     }
 }

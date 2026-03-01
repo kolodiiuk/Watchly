@@ -2,12 +2,6 @@ namespace Watchly.Api.Logging;
 
 internal static class AuthControllerEventIds
 {
-    internal static readonly EventId ChangePasswordSuccess = new(1000, nameof(ChangePasswordSuccess));
-
-    internal static readonly EventId ChangePasswordFailure = new(1001, nameof(ChangePasswordFailure));
-
-    internal static readonly EventId ChangePasswordAttempt = new(1002, nameof(ChangePasswordAttempt));
-
     internal static readonly EventId SignUpAttempt = new(1004, nameof(SignUpAttempt));
 
     internal static readonly EventId SignUpInvalidNull = new(1005, nameof(SignUpInvalidNull));
@@ -51,4 +45,6 @@ internal static class AuthControllerEventIds
     internal static readonly EventId TokenVerifiedSuccess = new(1024, nameof(TokenVerifiedSuccess));
 
     internal static readonly EventId TokenVerificationParseFailed = new(1025, nameof(TokenVerificationParseFailed));
+
+    internal static readonly EventId ChangeUserNameFailed = new(1026, nameof(ChangeUserNameFailed));
 }

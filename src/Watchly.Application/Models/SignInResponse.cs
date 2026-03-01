@@ -1,4 +1,4 @@
-namespace Watchly.Api.Dto.Auth;
+namespace Watchly.Application.Models;
 
 public class SignInResponse
 {

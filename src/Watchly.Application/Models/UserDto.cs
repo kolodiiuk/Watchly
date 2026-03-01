@@ -1,6 +1,6 @@
 using Watchly.Domain.Entities;
 
-namespace Watchly.Api.Dto.Auth;
+namespace Watchly.Application.Models;
 
 public class UserDto
 {
@@ -8,7 +8,7 @@ public class UserDto
 
     public string Email { get; set; }
 
-    public string Role { get; set; }
+    public string UserName { get; set; }
 
     public static UserDto MapUser(User user)
     {
@@ -16,6 +16,7 @@ public class UserDto
         {
             Id = user.Id,
             Email = user.Email,
+            UserName = user.UserName
         };
     }
 }

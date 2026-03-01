@@ -1,13 +1,13 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
-namespace Watchly.Application.Services;
+namespace Watchly.Domain.Utils;
 
-public abstract class BaseService<TService>
+public abstract class LoggingService<TService>
 {
     protected readonly ILogger<TService> Logger;
 
-    protected BaseService(ILogger<TService> logger)
+    protected LoggingService(ILogger<TService> logger)
     {
         Logger = logger;
     }
@@ -72,7 +72,7 @@ public abstract class BaseService<TService>
         action.Invoke(Logger, param1, param2, param3, param4, null);
     }
 
-    protected void Log<T1, T2, T3, T4, T5>(
+    protected void Log<T1, T2, T3, T4 ,T5>(
         LogLevel logLevel,
         EventId eventId,
         [StringSyntax("StructuredLogMessageTemplate")]
