@@ -23,6 +23,8 @@ public class WatchlyDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid
 
     public DbSet<KeywordTitle> KeywordTitles { get; set; }
 
+    public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+
     public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     public DbSet<Season> Seasons { get; set; }
