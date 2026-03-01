@@ -69,7 +69,8 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             return Result<SignInResponse>.Fail(tokensRes.Error);
         }
 
-        var response = CreateSignInResponse(tokensRes.Value, email, validationResult.Value.Id);
+        var response = CreateSignInResponse(tokensRes.Value, email,
+            validationResult.Value.UserName, validationResult.Value.Id);
 
         return Result<SignInResponse>.Success(response);
     }
@@ -223,7 +224,8 @@ public class AuthService : LoggingService<AuthService>, IAuthService
         };
     }
 
-    private SignInResponse CreateSignInResponse(TokensResponse tokens, string email, Guid userId)
+    private SignInResponse CreateSignInResponse(
+        TokensResponse tokens, string email, string userName, Guid userId)
     {
         var tokenExpiration = DateTime.UtcNow.AddMinutes(
             Convert.ToDouble(_jwtOptions.TokenExpirationMinutes));
@@ -237,6 +239,7 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             {
                 Id = userId,
                 Email = email,
+                UserName = userName
             }
         };
     }

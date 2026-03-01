@@ -101,7 +101,7 @@ public sealed class AuthController : BaseController<AuthController>
         Log(LogLevel.Information, AuthControllerEventIds.SignInSuccess,
             "Successfully signed in user: {Email}", request.Email);
 
-        return StatusCode(StatusCodes.Status200OK, response);
+        return StatusCode(StatusCodes.Status200OK, response.Value);
     }
 
     [ProducesResponseType(StatusCodes.Status200OK)]
