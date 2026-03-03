@@ -99,7 +99,7 @@ public class CommentController : BaseController<CommentController>
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed || string.IsNullOrWhiteSpace(req.Text) || req.EpisodeId < 1)
+        if (!isParsed || string.IsNullOrWhiteSpace(req.Text) || req.ContentId < 1)
         {
             Log(LogLevel.Warning, CommentControllerEventIds.LeaveCommentFailed,
                 "User ID not found in claims or request is not valid");
@@ -170,7 +170,7 @@ public class CommentController : BaseController<CommentController>
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    [HttpDelete("{commentId:int}")]
+    [HttpPatch("{commentId:int}")]
     public async Task<IActionResult> DeleteCommentAsync(int commentId, CancellationToken ct)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -203,3 +203,4 @@ public class CommentController : BaseController<CommentController>
         return StatusCode(StatusCodes.Status204NoContent);
     }
 }
+

@@ -1,3 +1,3 @@
 namespace Watchly.Application.Models;
 
-public record LeaveCommentRequest(int EpisodeId, string Text, bool IsTitle);
+public record LeaveCommentRequest(int ContentId, string Text, bool IsTitle);
