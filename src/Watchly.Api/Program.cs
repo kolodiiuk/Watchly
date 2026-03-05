@@ -149,12 +149,21 @@ builder.Services.AddAuthentication(options =>
                 return context.Response.WriteAsync(result);
             }
         };
-    });;
+    });
 
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddCors(options =>
+    options.AddPolicy(
+        "AllowLocalhost5173",
+        corsPolicyBuilder => corsPolicyBuilder
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()));
+
 builder.Services.AddSwaggerGen();
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
 
@@ -185,7 +194,8 @@ try
     }
 
     app.UseMiddleware<ExceptionHandlerMiddleware>();
-    app.UseCors("AllowAllOrigins");
+    app.UseRouting();
+    app.UseCors("AllowLocalhost5173");
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
