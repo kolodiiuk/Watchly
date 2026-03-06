@@ -1,4 +1,6 @@
-﻿namespace Watchly.Domain.Entities;
+﻿using Watchly.Domain.Enums;
+
+namespace Watchly.Domain.Entities;
 
 public sealed class Title
 {
@@ -13,9 +15,11 @@ public sealed class Title
     /// </summary>
     public int Runtime { get; set; }
 
-    public string Name { get; set; }
+    public ContentType ContentType { get; set; }
 
     public float? AvgTmdbRating { get; set; }
+
+    public string Name { get; set; }
 
     public string HomePage { get; set; }
 
@@ -38,6 +42,8 @@ public sealed class Title
 
     public ICollection<Season> Seasons { get; set; } = new List<Season>();
 
-    public ICollection<TitleSpokenLanguage> TitleSpokenLanguages { get; set; } = new List<TitleSpokenLanguage>();
+    public ICollection<TitleSpokenLanguage> TitleSpokenLanguages { get; set; }
+        = new List<TitleSpokenLanguage>();
+
     public ICollection<WatchListItem> WatchListItems { get; set; } = new List<WatchListItem>();
 }

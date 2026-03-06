@@ -39,6 +39,10 @@ public class WatchlyDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid
 
     public DbSet<TitleSpokenLanguage> TitleSpokenLanguages { get; set; }
 
+    public DbSet<UserContentActivity> UserContentActivities { get; set; }
+
+    public DbSet<UserTitleProgress> UserTitleProgresses { get; set; }
+
     public DbSet<Vote> Votes { get; set; }
 
     public DbSet<WatchList> WatchLists { get; set; }

@@ -4,9 +4,9 @@ public sealed class Vote
 {
     public int Id { get; set; }
 
-    public int TitleId { get; set; }
+    public int? TitleId { get; set; }
 
-    public int EpisodeId { get; set; }
+    public int? EpisodeId { get; set; }
 
     public Guid UserId { get; set; }
 
