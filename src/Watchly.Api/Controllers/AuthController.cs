@@ -95,7 +95,10 @@ public sealed class AuthController : BaseController<AuthController>
             Log(LogLevel.Warning, AuthControllerEventIds.SignInFailed,
                 "Sign in failed: {Error}", response.Error);
 
-            return StatusCode(StatusCodes.Status500InternalServerError);
+            return Problem(
+                title: "Sign in failed",
+                detail: response.Error,
+                statusCode: StatusCodes.Status500InternalServerError);
         }
 
         Log(LogLevel.Information, AuthControllerEventIds.SignInSuccess,
