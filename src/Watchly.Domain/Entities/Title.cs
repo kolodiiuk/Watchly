@@ -19,6 +19,8 @@ public sealed class Title
 
     public float? AvgTmdbRating { get; set; }
 
+    public bool IsAdult { get; set; }
+
     public string Name { get; set; }
 
     public string HomePage { get; set; }
@@ -28,6 +30,18 @@ public sealed class Title
     public string PosterUrl { get; set; }
 
     public string Tagline { get; set; }
+
+    public string Director { get; set; }
+
+    /// <summary>
+    /// Separated by ", "
+    /// </summary>
+    public string Actors { get; set; }
+
+    /// <summary>
+    /// Separated by ", "
+    /// </summary>
+    public string LocalizationLanguages { get; set; }
 
     public ICollection<Vote> Votes { get; set; } = new List<Vote>();
 

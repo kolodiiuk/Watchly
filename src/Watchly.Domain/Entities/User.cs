@@ -8,6 +8,11 @@ public sealed class User : IdentityUser<Guid>
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>
+    /// Full url
+    /// </summary>
+    public string ProfilePictureUrl { get; set; }
+
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
