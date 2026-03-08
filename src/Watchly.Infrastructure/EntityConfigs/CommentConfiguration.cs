@@ -16,6 +16,7 @@ internal sealed class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.Property(c => c.UserId);
         builder.Property(c => c.UpdatedAt).IsRequired();
         builder.Property(c => c.Text).HasMaxLength(5000).IsRequired();
+        builder.Property(c => c.IsDeleted).IsRequired();
 
         builder.HasOne(c => c.User)
             .WithMany(u => u.Comments)
@@ -31,3 +32,4 @@ internal sealed class CommentConfiguration : IEntityTypeConfiguration<Comment>
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
+

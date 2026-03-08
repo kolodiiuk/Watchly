@@ -18,7 +18,12 @@ internal sealed class TitleConfiguration : IEntityTypeConfiguration<Title>
         b.Property(t => t.HomePage).HasMaxLength(500);
         b.Property(t => t.Overview).HasMaxLength(5000).IsRequired();
         b.Property(t => t.PosterUrl).HasMaxLength(500);
+        b.Property(t => t.Actors).HasMaxLength(3000);
+        b.Property(t => t.Director).HasMaxLength(200);
+        b.Property(t => t.LocalizationLanguages).HasMaxLength(1500);
+        b.Property(t => t.IsAdult).IsRequired();
         b.Property(t => t.Tagline).HasMaxLength(500);
+        b.Property(t => t.ContentType).IsRequired();
 
         b.HasMany(t => t.Votes)
             .WithOne(v => v.Title)

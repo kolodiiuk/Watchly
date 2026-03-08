@@ -15,6 +15,9 @@ using Watchly.Application.Models;
 using Watchly.Domain.Entities;
 using Watchly.Infrastructure.DbContexts;
 using Watchly.Infrastructure.Extensions;
+using Watchly.Infrastructure.Models;
+
+DotNetEnv.Env.Load();
 
 var config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -81,6 +84,7 @@ builder.Services.AddServices();
 builder.Services.AddRepositories();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
 
 builder.Services.AddDbContext<WatchlyDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")!));
@@ -149,12 +153,21 @@ builder.Services.AddAuthentication(options =>
                 return context.Response.WriteAsync(result);
             }
         };
-    });;
+    });
 
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddCors(options =>
+    options.AddPolicy(
+        "AllowLocalhost5173",
+        corsPolicyBuilder => corsPolicyBuilder
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()));
+
 builder.Services.AddSwaggerGen();
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
 
@@ -185,7 +198,8 @@ try
     }
 
     app.UseMiddleware<ExceptionHandlerMiddleware>();
-    app.UseCors("AllowAllOrigins");
+    app.UseRouting();
+    app.UseCors("AllowLocalhost5173");
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();

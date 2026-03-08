@@ -24,4 +24,6 @@ public sealed class Episode
     public Season Season { get; set; }
 
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+
+    public ICollection<Vote> Votes { get; set; } = new List<Vote>();
 }

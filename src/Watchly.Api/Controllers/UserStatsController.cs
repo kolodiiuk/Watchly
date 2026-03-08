@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Watchly.Application.Interfaces;
+using Watchly.Application.Models;
 
 namespace Watchly.Api.Controllers;
 
@@ -8,8 +10,12 @@ namespace Watchly.Api.Controllers;
 [Route("api/[controller]")]
 public sealed class UserStatsController : BaseController<UserStatsController>
 {
-    public UserStatsController(ILogger<UserStatsController> logger) : base(logger)
+    private readonly IUserStatsService _userStatsService;
+
+    public UserStatsController(IUserStatsService userStatsService,
+        ILogger<UserStatsController> logger) : base(logger)
     {
+        _userStatsService = userStatsService;
     }
 
     [Authorize]
@@ -36,12 +42,4 @@ public sealed class UserStatsController : BaseController<UserStatsController>
     {
         return StatusCode(418);
     }
-}
-
-public class SeriesStatsResponse
-{
-}
-
-public class MovieStatsResponse
-{
 }

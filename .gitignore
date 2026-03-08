@@ -1,5 +1,5 @@
 .idea/
-appsettings.json
+.env
 Logs/
 
 # Build results

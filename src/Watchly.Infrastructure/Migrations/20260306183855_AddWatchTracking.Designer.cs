@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Watchly.Infrastructure.DbContexts;
@@ -11,9 +12,11 @@ using Watchly.Infrastructure.DbContexts;
 namespace Watchly.Infrastructure.Migrations
 {
     [DbContext(typeof(WatchlyDbContext))]
-    partial class WatchlyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260306183855_AddWatchTracking")]
+    partial class AddWatchTracking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -528,11 +531,6 @@ namespace Watchly.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Actors")
-                        .HasMaxLength(3000)
-                        .HasColumnType("character varying(3000)")
-                        .HasColumnName("actors");
-
                     b.Property<float?>("AvgTmdbRating")
                         .HasColumnType("real")
                         .HasColumnName("avg_tmdb_rating");
@@ -541,25 +539,10 @@ namespace Watchly.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("content_type");
 
-                    b.Property<string>("Director")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("director");
-
-                    b.Property<bool>("IsAdult")
-                        .IsRequired()
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_adult");
-
                     b.Property<string>("HomePage")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("home_page");
-
-                    b.Property<string>("LocalizationLanguages")
-                        .HasMaxLength(1500)
-                        .HasColumnType("character varying(1500)")
-                        .HasColumnName("localization_languages");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -746,10 +729,6 @@ namespace Watchly.Infrastructure.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("boolean")
                         .HasColumnName("phone_number_confirmed");
-
-                    b.Property<string>("ProfilePictureUrl")
-                        .HasColumnType("text")
-                        .HasColumnName("profile_picture_url");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text")
