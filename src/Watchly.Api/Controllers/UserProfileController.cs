@@ -8,6 +8,7 @@ using Watchly.Api.Logging;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models;
 using Watchly.Domain.Extensions;
+using Watchly.Infrastructure.Interfaces;
 
 namespace Watchly.Api.Controllers;
 
@@ -20,13 +21,17 @@ public sealed class UserProfileController : BaseController<UserProfileController
 
     private readonly IPasswordManagementService _passwordManagementService;
 
+    private readonly IImageService _imageService;
+
     public UserProfileController(IUserManagementService userManagementService,
         IPasswordManagementService passwordManagementService,
+        IImageService imageService,
         ILogger<UserProfileController> logger)
         : base(logger)
     {
         _userManagementService = userManagementService;
         _passwordManagementService = passwordManagementService;
+        _imageService = imageService;
     }
 
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -261,6 +266,56 @@ public sealed class UserProfileController : BaseController<UserProfileController
                     detail: res.Error,
                     statusCode: StatusCodes.Status500InternalServerError);
             }
+        }
+
+        return StatusCode(StatusCodes.Status204NoContent);
+    }
+
+    [ProducesResponseType(204)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(500)]
+    [HttpPatch("profile-picture")]
+    [EndpointSummary("Adds a new profile picture")]
+    [EndpointDescription("If a user doesn't have one, adds it, otherwise overwrites existing url")]
+    public async Task<IActionResult> UpdatePictureProfileAsync(
+        IFormFile file, CancellationToken ct)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, "No file uploaded.");
+        }
+
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var isParsed = Guid.TryParse(userId, out var guid);
+        if (!isParsed)
+        {
+            Log(LogLevel.Warning, CommentControllerEventIds.LeaveCommentFailed,
+                "User ID not found in claims or request is not valid");
+
+            return Problem(
+                title: "User ID or request validation failure",
+                detail: "User ID or request is null or empty",
+                statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        var imgUploadRes = await _imageService.SaveImageAsync(
+            file.OpenReadStream(), file.FileName, ct);
+        if (imgUploadRes.Failure)
+        {
+            return Problem(
+                title: "Problem saving image",
+                detail: imgUploadRes.Error,
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        var imgPersistRes = await _userManagementService.AddImageAsync(guid, imgUploadRes.Value);
+        if (imgPersistRes.Failure)
+        {
+            return Problem(
+                title: "User ID or request validation failure",
+                detail: "User ID or request is null or empty",
+                statusCode: StatusCodes.Status400BadRequest);
         }
 
         return StatusCode(StatusCodes.Status204NoContent);
