@@ -40,6 +40,7 @@ public class CommentController : BaseController<CommentController>
 
         Log(LogLevel.Information, CommentControllerEventIds.GetCommentsTitleAttempt,
             "Get comments attempt for title {id}", titleId);
+        ct.ThrowIfCancellationRequested();
         var res = await _commentService.GetCommentsAsync(titleId, true, ct);
         if (res.Failure)
         {
@@ -74,6 +75,7 @@ public class CommentController : BaseController<CommentController>
 
         Log(LogLevel.Information, CommentControllerEventIds.GetCommentsEpisodeAttempt,
             "Get comments attempt for episode {id}", episodeId);
+        ct.ThrowIfCancellationRequested();
         var res = await _commentService.GetCommentsAsync(episodeId, false, ct);
         if (res.Failure)
         {
@@ -97,22 +99,21 @@ public class CommentController : BaseController<CommentController>
     [HttpPost]
     public async Task<IActionResult> LeaveCommentAsync([FromBody] LeaveCommentRequest req, CancellationToken ct)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed || string.IsNullOrWhiteSpace(req.Text) || req.ContentId < 1)
+        if (UserId == Guid.Empty || string.IsNullOrWhiteSpace(req.Text) || req.ContentId < 1)
         {
             Log(LogLevel.Warning, CommentControllerEventIds.LeaveCommentFailed,
-                "User ID not found in claims or request is not valid");
+                "request is not valid");
 
             return Problem(
-                title: "User ID or request validation failure",
-                detail: "User ID or request is null or empty",
+                title: "request validation failure",
+                detail: "request is null or empty",
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
         Log(LogLevel.Information, CommentControllerEventIds.LeaveCommentAttempt,
-            "Leave comment attempt for user ID: {UserId}", userId);
-        var res = await _commentService.LeaveCommentAsync(req, guid, ct);
+            "Leave comment attempt for user ID: {UserId}", UserId);
+        ct.ThrowIfCancellationRequested();
+        var res = await _commentService.LeaveCommentAsync(req, UserId, ct);
         if (res.Failure)
         {
             Log(LogLevel.Warning, CommentControllerEventIds.LeaveCommentFailed,
@@ -135,9 +136,7 @@ public class CommentController : BaseController<CommentController>
     [HttpPut]
     public async Task<IActionResult> UpdateCommentAsync([FromBody] UpdateCommentRequest req, CancellationToken ct)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed || string.IsNullOrWhiteSpace(req.Text) || req.CommentId < 1)
+        if (UserId == Guid.Empty || string.IsNullOrWhiteSpace(req.Text) || req.CommentId < 1)
         {
             Log(LogLevel.Warning, CommentControllerEventIds.UpdateCommentFailed,
                 "User ID not found in claims or request is not valid");
@@ -149,8 +148,8 @@ public class CommentController : BaseController<CommentController>
         }
 
         Log(LogLevel.Information, CommentControllerEventIds.UpdateCommentAttempt,
-            "Comment {comment} update attempt for user ID: {UserId}", req.CommentId, userId);
-        var res = await _commentService.UpdateCommentAsync(req.CommentId, req.Text, guid, ct);
+            "Comment {comment} update attempt for user ID: {UserId}", req.CommentId, UserId);
+        var res = await _commentService.UpdateCommentAsync(req.CommentId, req.Text, UserId, ct);
         if (res.Failure)
         {
             Log(LogLevel.Warning, CommentControllerEventIds.UpdateCommentFailed,
@@ -173,9 +172,7 @@ public class CommentController : BaseController<CommentController>
     [HttpPatch("{commentId:int}")]
     public async Task<IActionResult> DeleteCommentAsync(int commentId, CancellationToken ct)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed || commentId < 0)
+        if (UserId == Guid.Empty || commentId < 0)
         {
             Log(LogLevel.Warning, CommentControllerEventIds.DeleteCommentFailed,
                 "User ID not found in claims or comment ID is not valid");
@@ -187,8 +184,9 @@ public class CommentController : BaseController<CommentController>
         }
 
         Log(LogLevel.Information, CommentControllerEventIds.DeleteCommentAttempt,
-            "Comment {comment} deletion attempt for user ID: {UserId}", commentId, userId);
-        var res = await _commentService.DeleteCommentAsync(commentId, guid, ct);
+            "Comment {comment} deletion attempt for user ID: {UserId}", commentId, UserId);
+        ct.ThrowIfCancellationRequested();
+        var res = await _commentService.DeleteCommentAsync(commentId, UserId, ct);
         if (res.Failure)
         {
             Log(LogLevel.Warning, CommentControllerEventIds.DeleteCommentFailed,
@@ -203,4 +201,3 @@ public class CommentController : BaseController<CommentController>
         return StatusCode(StatusCodes.Status204NoContent);
     }
 }
-

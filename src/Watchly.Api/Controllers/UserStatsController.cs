@@ -30,27 +30,14 @@ public sealed class UserStatsController : BaseController<UserStatsController>
     [HttpGet("movie")]
     public async Task<ActionResult<MovieStatsResponse>> GetMovieStatsAsync(CancellationToken ct)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed)
-        {
-            Log(LogLevel.Warning, UserStatsControllerEventIds.GetMovieFailed,
-                "User ID not found in claims or invalid when requesting movie stats");
-
-            return Problem(
-                title: "User ID validation failure",
-                detail: "User ID not found in claims or invalid",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
         Log(LogLevel.Information, UserStatsControllerEventIds.GetMovieAttempt,
-            "Get movie stats attempt for user {UserId}", userId);
-
-        var res = await _userStatsService.GetUserMovieStatsAsync(guid, ct);
+            "Get movie stats attempt for user {UserId}", UserId);
+        ct.ThrowIfCancellationRequested();
+        var res = await _userStatsService.GetUserMovieStatsAsync(UserId, ct);
         if (res.Failure)
         {
             Log(LogLevel.Error, UserStatsControllerEventIds.GetMovieFailed,
-                "Get movie stats for user {UserId} failed: {error}", userId, res.Error);
+                "Get movie stats for user {UserId} failed: {error}", UserId, res.Error);
 
             return Problem(
                 title: "Get movie stats failed",
@@ -71,27 +58,14 @@ public sealed class UserStatsController : BaseController<UserStatsController>
     [HttpGet("series")]
     public async Task<ActionResult<SeriesStatsResponse>> GetSeriesStatsAsync(CancellationToken ct)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed)
-        {
-            Log(LogLevel.Warning, UserStatsControllerEventIds.GetSeriesFailed,
-                "User ID not found in claims or invalid when requesting series stats");
-
-            return Problem(
-                title: "User ID validation failure",
-                detail: "User ID not found in claims or invalid",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
         Log(LogLevel.Information, UserStatsControllerEventIds.GetSeriesAttempt,
-            "Get series stats attempt for user {UserId}", userId);
+            "Get series stats attempt for user {UserId}", UserId);
 
-        var res = await _userStatsService.GetUserTvSeriesStatsAsync(guid, ct);
+        var res = await _userStatsService.GetUserTvSeriesStatsAsync(UserId, ct);
         if (res.Failure)
         {
             Log(LogLevel.Error, UserStatsControllerEventIds.GetSeriesFailed,
-                "Get series stats for user {UserId} failed: {error}", userId, res.Error);
+                "Get series stats for user {UserId} failed: {error}", UserId, res.Error);
 
             return Problem(
                 title: "Get series stats failed",

@@ -28,9 +28,7 @@ public class VoteController : BaseController<VoteController>
     [HttpPost("title")]
     public async Task<IActionResult> VoteTitleAsync(int titleId, VoteDto voteDto, CancellationToken ct)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed || titleId < 1 || voteDto is null)
+        if (titleId < 1 || voteDto is null)
         {
             Log(LogLevel.Warning, VoteControllerEventIds.VoteTitleFailed,
                 "User ID not found in claims or request is not valid");
@@ -42,9 +40,9 @@ public class VoteController : BaseController<VoteController>
         }
 
         Log(LogLevel.Information, VoteControllerEventIds.VoteTitleAttempt,
-            "Vote attempt for title {titleId} by user {UserId}", titleId, userId);
+            "Vote attempt for title {titleId} by user {UserId}", titleId, UserId);
 
-        var res = await _voteService.VoteTitleAsync(titleId, voteDto, guid, ct);
+        var res = await _voteService.VoteTitleAsync(titleId, voteDto, UserId, ct);
         if (res.Failure)
         {
             Log(LogLevel.Warning, VoteControllerEventIds.VoteTitleFailed,
@@ -68,9 +66,7 @@ public class VoteController : BaseController<VoteController>
     public async Task<IActionResult> ChangeVoteTitleAsync(int titleId, ChangeVoteDto changeVoteDto,
         CancellationToken ct)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed || titleId < 1 || changeVoteDto is null)
+        if (UserId != Guid.Empty || titleId < 1 || changeVoteDto is null)
         {
             Log(LogLevel.Warning, VoteControllerEventIds.ChangeVoteTitleFailed,
                 "User ID not found in claims or request is not valid");
@@ -82,9 +78,9 @@ public class VoteController : BaseController<VoteController>
         }
 
         Log(LogLevel.Information, VoteControllerEventIds.ChangeVoteTitleAttempt,
-            "Change vote attempt for title {titleId} by user {UserId}", titleId, userId);
+            "Change vote attempt for title {titleId} by user {UserId}", titleId, UserId);
 
-        var res = await _voteService.ChangeVoteTitleAsync(titleId, changeVoteDto, guid, ct);
+        var res = await _voteService.ChangeVoteTitleAsync(titleId, changeVoteDto, UserId, ct);
         if (res.Failure)
         {
             Log(LogLevel.Warning, VoteControllerEventIds.ChangeVoteTitleFailed,
@@ -107,9 +103,7 @@ public class VoteController : BaseController<VoteController>
     [HttpPost("vote/{episodeId:int}")]
     public async Task<IActionResult> VoteAsync(int episodeId, VoteDto voteDto, CancellationToken ct)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed || episodeId < 1 || voteDto is null)
+        if (UserId != Guid.Empty || episodeId < 1 || voteDto is null)
         {
             Log(LogLevel.Warning, VoteControllerEventIds.VoteEpisodeFailed,
                 "User ID not found in claims or request is not valid");
@@ -121,9 +115,9 @@ public class VoteController : BaseController<VoteController>
         }
 
         Log(LogLevel.Information, VoteControllerEventIds.VoteEpisodeAttempt,
-            "Vote attempt for episode {episodeId} by user {UserId}", episodeId, userId);
+            "Vote attempt for episode {episodeId} by user {UserId}", episodeId, UserId);
 
-        var res = await _voteService.VoteEpisodeAsync(episodeId, voteDto, guid, ct);
+        var res = await _voteService.VoteEpisodeAsync(episodeId, voteDto, UserId, ct);
         if (res.Failure)
         {
             Log(LogLevel.Warning, VoteControllerEventIds.VoteEpisodeFailed,
@@ -147,9 +141,7 @@ public class VoteController : BaseController<VoteController>
     public async Task<IActionResult> ChangeVoteAsync(int episodeId, ChangeVoteDto changeVoteDto,
         CancellationToken ct)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed || episodeId < 1 || changeVoteDto is null)
+        if (UserId != Guid.Empty || episodeId < 1 || changeVoteDto is null)
         {
             Log(LogLevel.Warning, VoteControllerEventIds.ChangeVoteEpisodeFailed,
                 "User ID not found in claims or request is not valid");
@@ -161,9 +153,9 @@ public class VoteController : BaseController<VoteController>
         }
 
         Log(LogLevel.Information, VoteControllerEventIds.ChangeVoteEpisodeAttempt,
-            "Change vote attempt for episode {episodeId} by user {UserId}", episodeId, userId);
+            "Change vote attempt for episode {episodeId} by user {UserId}", episodeId, UserId);
 
-        var res = await _voteService.ChangeVoteEpisodeAsync(episodeId, changeVoteDto, guid, ct);
+        var res = await _voteService.ChangeVoteEpisodeAsync(episodeId, changeVoteDto, UserId, ct);
         if (res.Failure)
         {
             Log(LogLevel.Warning, VoteControllerEventIds.ChangeVoteEpisodeFailed,

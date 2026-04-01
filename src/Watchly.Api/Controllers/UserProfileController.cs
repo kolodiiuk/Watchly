@@ -41,29 +41,16 @@ public sealed class UserProfileController : BaseController<UserProfileController
     [EndpointSummary("Verifies the caller's JWT and returns profile data.")]
     [EndpointDescription(
         "Reads the user identifier from claims, loads the user entity, and confirms the token is still valid.")]
-    public async Task<ActionResult<UserDto>> VerifyTokenAsync()
+    public async Task<ActionResult<UserDto>> VerifyTokenAsync(CancellationToken ct)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         Log(LogLevel.Information, AuthControllerEventIds.TokenVerificationAttempt,
-            "Token verification attempt for user ID: {UserId}", userId);
-
-        var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed)
-        {
-            Log(LogLevel.Warning, AuthControllerEventIds.TokenVerificationNoUserId,
-                "Token verification failed: user ID not found in claims");
-
-            return Problem(
-                title: "User ID validation failure",
-                detail: "User ID is null or empty",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
-        var result = await _userManagementService.GetUserAsync(guid);
+            "Token verification attempt for user ID: {UserId}", UserId);
+        ct.ThrowIfCancellationRequested();
+        var result = await _userManagementService.GetUserAsync(UserId);
         if (result.Failure)
         {
             Log(LogLevel.Warning, AuthControllerEventIds.TokenVerificationFailed,
-                "Token verification failed for user ID: {UserId}. Error: {Error}", guid, result.Error);
+                "Token verification failed for user ID: {UserId}. Error: {Error}", UserId, result.Error);
 
             return Problem(
                 title: "User verification failure",
@@ -72,7 +59,7 @@ public sealed class UserProfileController : BaseController<UserProfileController
         }
 
         Log(LogLevel.Information, AuthControllerEventIds.TokenVerifiedSuccess,
-            "Successfully verified token for user ID: {UserId}", guid);
+            "Successfully verified token for user ID: {UserId}", UserId);
 
         return StatusCode(StatusCodes.Status200OK, result.Value);
     }
@@ -84,14 +71,12 @@ public sealed class UserProfileController : BaseController<UserProfileController
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [HttpPost("change-username")]
-    public async Task<IActionResult> ChangeUsernameAsync([FromBody] ChangeUserNameRequest req)
+    public async Task<IActionResult> ChangeUsernameAsync([FromBody] ChangeUserNameRequest req, CancellationToken ct)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         Log(LogLevel.Information, AuthControllerEventIds.TokenVerificationAttempt,
-            "Token verification attempt for user ID: {UserId}", userId);
-
-        var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed || string.IsNullOrWhiteSpace(req.Name))
+            "Token verification attempt for user ID: {UserId}", UserId);
+        ct.ThrowIfCancellationRequested();
+        if (UserId == Guid.Empty || string.IsNullOrWhiteSpace(req.Name))
         {
             Log(LogLevel.Warning, AuthControllerEventIds.ChangeUserNameFailed,
                 "User ID not found in claims or name is not valid");
@@ -102,7 +87,7 @@ public sealed class UserProfileController : BaseController<UserProfileController
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
-        var res = await _userManagementService.ChangeUserNameAsync(guid, req.Name);
+        var res = await _userManagementService.ChangeUserNameAsync(UserId, req.Name);
         if (res.Failure)
         {
             Log(LogLevel.Warning, AuthControllerEventIds.ChangeUserNameFailed,
@@ -140,24 +125,22 @@ public sealed class UserProfileController : BaseController<UserProfileController
                 statusCode: StatusCodes.Status400BadRequest);
         }
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         Log(LogLevel.Information, UserProfileControllerEventIds.ChangePasswordAttempt,
-            "Start change password attempt for user {userId}", userId);
+            "Start change password attempt for user {userId}", UserId);
 
-        var isParsed = Guid.TryParse(userId, out var parsedUserId);
-        if (!isParsed)
+        if (UserId == Guid.Empty)
         {
             return StatusCode(StatusCodes.Status401Unauthorized);
         }
 
         var res = await _passwordManagementService.ChangePasswordAsync(
-            parsedUserId, req.OldPassword, req.NewPassword);
+            UserId, req.OldPassword, req.NewPassword);
 
         if (res.Failure)
         {
             Log(LogLevel.Error, UserProfileControllerEventIds.ChangePasswordFailure,
                 "Problem changing password for user {userId}. Error: {err}",
-                userId, res.Error);
+                UserId, res.Error);
             if (res.Error.Contains("PasswordMismatch", StringComparison.CurrentCultureIgnoreCase))
             {
                 return Problem(
@@ -189,7 +172,7 @@ public sealed class UserProfileController : BaseController<UserProfileController
         }
 
         Log(LogLevel.Information, UserProfileControllerEventIds.ChangePasswordSuccess,
-            "Password was successfully changed for user {userId}", userId);
+            "Password was successfully changed for user {userId}", UserId);
 
         return StatusCode(StatusCodes.Status204NoContent);
     }
@@ -209,7 +192,7 @@ public sealed class UserProfileController : BaseController<UserProfileController
                 title: "Not valid email",
                 statusCode: StatusCodes.Status400BadRequest);
         }
-
+        ct.ThrowIfCancellationRequested();
         var res = await _passwordManagementService.SendPasswordResetConfirmationAsync(req.Email, ct);
         if (res.Failure)
         {
@@ -248,7 +231,7 @@ public sealed class UserProfileController : BaseController<UserProfileController
                 detail: "Token is not provided",
                 statusCode: StatusCodes.Status400BadRequest);
         }
-
+        ct.ThrowIfCancellationRequested();
         var res = await _passwordManagementService.ValidateResetPasswordRequestAsync(token, ct);
         if (res.Failure)
         {
@@ -286,19 +269,6 @@ public sealed class UserProfileController : BaseController<UserProfileController
             return StatusCode(StatusCodes.Status400BadRequest, "No file uploaded.");
         }
 
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var isParsed = Guid.TryParse(userId, out var guid);
-        if (!isParsed)
-        {
-            Log(LogLevel.Warning, CommentControllerEventIds.LeaveCommentFailed,
-                "User ID not found in claims or request is not valid");
-
-            return Problem(
-                title: "User ID or request validation failure",
-                detail: "User ID or request is null or empty",
-                statusCode: StatusCodes.Status401Unauthorized);
-        }
-
         var imgUploadRes = await _imageService.SaveImageAsync(
             file.OpenReadStream(), file.FileName, ct);
         if (imgUploadRes.Failure)
@@ -309,7 +279,7 @@ public sealed class UserProfileController : BaseController<UserProfileController
                 statusCode: StatusCodes.Status500InternalServerError);
         }
 
-        var imgPersistRes = await _userManagementService.AddImageAsync(guid, imgUploadRes.Value);
+        var imgPersistRes = await _userManagementService.AddImageAsync(UserId, imgUploadRes.Value);
         if (imgPersistRes.Failure)
         {
             return Problem(

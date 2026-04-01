@@ -15,6 +15,7 @@ public sealed class VoteService : IVoteService
 
     public async Task<Result> VoteTitleAsync(int titleId, VoteDto voteDto, Guid result, CancellationToken ct)
     {
+        
         throw new NotImplementedException();
     }
 

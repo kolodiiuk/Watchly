@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Watchly.Api.Controllers;
@@ -10,6 +11,17 @@ public abstract class BaseController<TController> : ControllerBase where TContro
     protected BaseController(ILogger<TController> logger)
     {
         Logger = logger;
+    }
+    
+    protected Guid UserId
+    {
+        get
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Guid.TryParse(userId, out var guid);
+
+            return guid;
+        }
     }
 
     protected void Log(
