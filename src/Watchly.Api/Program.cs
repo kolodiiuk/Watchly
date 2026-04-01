@@ -100,6 +100,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
         options.Password.RequiredLength = 8;
         options.User.RequireUniqueEmail = true;
     })
+    .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<WatchlyDbContext>()
     .AddDefaultTokenProviders();
 

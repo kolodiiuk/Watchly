@@ -9,14 +9,17 @@ public class UserDto
     public string Email { get; set; }
 
     public string UserName { get; set; }
-
-    public static UserDto MapUser(User user)
+    
+    public IList<string> UserRoles { get; set; }
+    
+    public static UserDto MapUser(User user, IList<string> userRoles)
     {
         return new UserDto
         {
             Id = user.Id,
             Email = user.Email,
-            UserName = user.UserName
+            UserName = user.UserName,
+            UserRoles = userRoles
         };
     }
 }

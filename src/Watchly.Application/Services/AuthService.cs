@@ -46,6 +46,15 @@ public class AuthService : LoggingService<AuthService>, IAuthService
                     result.Errors.Select(e => e.Description))}");
             }
 
+            var roleRes = await _userManager.AddToRoleAsync(user, "User");
+            if (!roleRes.Succeeded)
+            {
+                var codes = roleRes.Errors.Select(err => err.Code);
+                
+                return Result.Fail(
+                    $"Failed to add to role: {string.Join(", ", codes)}");
+            }
+
             return Result.Success();
         }
         catch (Exception e)
@@ -69,8 +78,10 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             return Result<SignInResponse>.Fail(tokensRes.Error);
         }
 
+        var userRoles = await _userManager.GetRolesAsync(validationResult.Value);
+        
         var response = CreateSignInResponse(tokensRes.Value, email,
-            validationResult.Value.UserName, validationResult.Value.Id);
+            validationResult.Value.UserName, validationResult.Value.Id, userRoles);
 
         return Result<SignInResponse>.Success(response);
     }
@@ -225,7 +236,7 @@ public class AuthService : LoggingService<AuthService>, IAuthService
     }
 
     private SignInResponse CreateSignInResponse(
-        TokensResponse tokens, string email, string userName, Guid userId)
+        TokensResponse tokens, string email, string userName, Guid userId, IList<string> userRoles)
     {
         var tokenExpiration = DateTime.UtcNow.AddMinutes(
             Convert.ToDouble(_jwtOptions.TokenExpirationMinutes));
@@ -239,7 +250,8 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             {
                 Id = userId,
                 Email = email,
-                UserName = userName
+                UserName = userName,
+                UserRoles = userRoles
             }
         };
     }
