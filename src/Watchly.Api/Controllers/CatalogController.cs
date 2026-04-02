@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Watchly.Api.Filters;
 using Watchly.Api.Logging;
 using Watchly.Application.Interfaces;
-using Watchly.Domain.Entities;
+using Watchly.Application.Models;
 
 namespace Watchly.Api.Controllers;
 
@@ -40,14 +41,7 @@ public sealed class CatalogController : BaseController<CatalogController>
 
         Log(LogLevel.Information, CatalogControllerEventIds.SearchAttempt, "Search attempt for term {term}",
             searchTerm);
-
-        // prepare predicate (case-insensitive)
-        bool Predicate(Title t) =>
-            (!string.IsNullOrEmpty(t.Name) && t.Name.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase))
-            || (!string.IsNullOrEmpty(t.Overview) &&
-                t.Overview.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase));
-
-        var res = await _contentService.GetTitlesByConditionAsync(Predicate, ct);
+        var res = await _contentService.SearchTitlesAsync(searchTerm, ct);
         if (res.Failure)
         {
             Log(LogLevel.Error, CatalogControllerEventIds.SearchFailed, "Search for term {term} failed: {error}",
@@ -59,14 +53,7 @@ public sealed class CatalogController : BaseController<CatalogController>
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        var mapped = res.Value.Select(t => new TitleShortInfo(
-            t.Id,
-            t.Name,
-            t.PosterUrl,
-            t.AvgTmdbRating
-        ));
-
-        return StatusCode(StatusCodes.Status200OK, mapped);
+        return StatusCode(StatusCodes.Status200OK, res.Value);
     }
 
     [EndpointSummary("Filters titles.")]
@@ -77,22 +64,17 @@ public sealed class CatalogController : BaseController<CatalogController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
     [HttpGet("filter")]
-    public async Task<ActionResult<IEnumerable<TitleShortInfo>>> FilterTitlesAsync([FromQuery] FilterRequest filter,
+    public async Task<ActionResult<IEnumerable<TitleShortInfo>>> FilterTitlesAsync(
+        [FromQuery] FilterRequest filter,
         CancellationToken ct)
     {
-        // If no filter provided, return all (or you can choose to require some filter fields)
-        filter ??= new FilterRequest();
+        Log(LogLevel.Information, CatalogControllerEventIds.FilterAttempt, "Filter attempt");
 
-        Log(LogLevel.Information, CatalogControllerEventIds.FilterAttempt, "Filter attempt {@filter}", filter);
-
-        // NOTE: FilterRequest currently has no fields in your file. For now use a permissive predicate.
-        // If you add fields to FilterRequest (e.g. Genre, ContentType), update this predicate to reflect them.
-        bool Predicate(Title t) => true;
-
-        var res = await _contentService.GetTitlesByConditionAsync(Predicate, ct);
+        var res = await _contentService.FilterTitlesAsync(filter, ct);
         if (res.Failure)
         {
-            Log(LogLevel.Error, CatalogControllerEventIds.FilterFailed, "Filter failed: {error}", res.Error);
+            Log(LogLevel.Error, CatalogControllerEventIds.FilterFailed, 
+                "Filter failed: {error}", res.Error);
 
             return Problem(
                 title: "Filter failed",
@@ -100,14 +82,7 @@ public sealed class CatalogController : BaseController<CatalogController>
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        var mapped = res.Value.Select(t => new TitleShortInfo(
-            t.Id,
-            t.Name,
-            t.PosterUrl,
-            t.AvgTmdbRating
-        ));
-
-        return StatusCode(StatusCodes.Status200OK, mapped);
+        return StatusCode(StatusCodes.Status200OK, res.Value);
     }
 
     [EndpointSummary("Gets a specific title.")]
@@ -116,6 +91,7 @@ public sealed class CatalogController : BaseController<CatalogController>
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
+    [ServiceFilter(typeof(ValidationFilter))]
     [HttpGet("{titleId:int}")]
     public async Task<ActionResult<TitleInfo>> GetTitleAsync(int titleId, CancellationToken ct)
     {
@@ -129,12 +105,7 @@ public sealed class CatalogController : BaseController<CatalogController>
 
         Log(LogLevel.Information, CatalogControllerEventIds.GetTitleAttempt, "Get title attempt for id {titleId}",
             titleId);
-
-        // NOTE: your current `IContentService.GetTitleByIdAsync` signature (in repo) does not accept an id.
-        // The controller calls it per the interface in your project. If you update the service to accept an id,
-        // change call below to: await _contentService.GetTitleByIdAsync(titleId, ct);
-        var res = await _contentService.GetTitleByIdAsync(ct);
-
+        var res = await _contentService.GetTitleByIdAsync(titleId, ct);
         if (res.Failure)
         {
             Log(LogLevel.Error, CatalogControllerEventIds.GetTitleFailed, "Get title {titleId} failed: {error}",
@@ -146,18 +117,7 @@ public sealed class CatalogController : BaseController<CatalogController>
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        var t = res.Value;
-        var info = new TitleInfo(
-            t.Id,
-            t.Name,
-            t.Overview,
-            t.PosterUrl,
-            t.ReleaseDate,
-            t.Runtime,
-            t.AvgTmdbRating
-        );
-
-        return StatusCode(StatusCodes.Status200OK, info);
+        return StatusCode(StatusCodes.Status200OK, res.Value);
     }
 
     [EndpointSummary("Gets a specific episode.")]
@@ -194,11 +154,6 @@ public sealed class CatalogController : BaseController<CatalogController>
     }
 }
 
-/* DTO-like records local to controller file for simple mapping.
-   Adjust fields as needed, or replace with project-wide DTO types. */
-
-public record TitleShortInfo(int Id, string Name, string PosterUrl, float? AvgTmdbRating);
-
 public record TitleInfo(
     int Id,
     string Name,
@@ -209,8 +164,3 @@ public record TitleInfo(
     float? AvgTmdbRating);
 
 public record EpisodeInfo(int TitleId, int SeasonId, int EpisodeId);
-
-public record FilterRequest
-{
-    // Add fields (Genre, ContentType, Keywords, etc.) as needed for filtering.
-}
