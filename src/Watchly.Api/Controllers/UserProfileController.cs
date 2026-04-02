@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Watchly.Api.Dto.Auth;
 using Watchly.Api.Dto.UserProfile;
+using Watchly.Api.Filters;
 using Watchly.Api.Logging;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models;
@@ -18,9 +19,7 @@ namespace Watchly.Api.Controllers;
 public sealed class UserProfileController : BaseController<UserProfileController>
 {
     private readonly IUserManagementService _userManagementService;
-
     private readonly IPasswordManagementService _passwordManagementService;
-
     private readonly IImageService _imageService;
 
     public UserProfileController(IUserManagementService userManagementService,
@@ -38,13 +37,12 @@ public sealed class UserProfileController : BaseController<UserProfileController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [HttpPost("verify")]
+    [ServiceFilter(typeof(ValidationFilter))]
     [EndpointSummary("Verifies the caller's JWT and returns profile data.")]
     [EndpointDescription(
         "Reads the user identifier from claims, loads the user entity, and confirms the token is still valid.")]
     public async Task<ActionResult<UserDto>> VerifyTokenAsync(CancellationToken ct)
     {
-        Log(LogLevel.Information, AuthControllerEventIds.TokenVerificationAttempt,
-            "Token verification attempt for user ID: {UserId}", UserId);
         ct.ThrowIfCancellationRequested();
         var result = await _userManagementService.GetUserAsync(UserId);
         if (result.Failure)
@@ -58,9 +56,6 @@ public sealed class UserProfileController : BaseController<UserProfileController
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 
-        Log(LogLevel.Information, AuthControllerEventIds.TokenVerifiedSuccess,
-            "Successfully verified token for user ID: {UserId}", UserId);
-
         return StatusCode(StatusCodes.Status200OK, result.Value);
     }
 
@@ -71,20 +66,13 @@ public sealed class UserProfileController : BaseController<UserProfileController
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [HttpPost("change-username")]
+    [ServiceFilter(typeof(ValidationFilter))]
     public async Task<IActionResult> ChangeUsernameAsync([FromBody] ChangeUserNameRequest req, CancellationToken ct)
     {
-        Log(LogLevel.Information, AuthControllerEventIds.TokenVerificationAttempt,
-            "Token verification attempt for user ID: {UserId}", UserId);
         ct.ThrowIfCancellationRequested();
-        if (UserId == Guid.Empty || string.IsNullOrWhiteSpace(req.Name))
+        if (UserId == Guid.Empty)
         {
-            Log(LogLevel.Warning, AuthControllerEventIds.ChangeUserNameFailed,
-                "User ID not found in claims or name is not valid");
-
-            return Problem(
-                title: "User ID or named validation failure",
-                detail: "User ID or name is null or empty",
-                statusCode: StatusCodes.Status400BadRequest);
+            return StatusCode(StatusCodes.Status401Unauthorized);
         }
 
         var res = await _userManagementService.ChangeUserNameAsync(UserId, req.Name);
@@ -110,24 +98,12 @@ public sealed class UserProfileController : BaseController<UserProfileController
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [HttpPatch("change-password")]
+    [ServiceFilter(typeof(ValidationFilter))]
     [EndpointSummary("Changes a password of existing user.")]
     [EndpointDescription("Accepts old password, new password from an authorized user.")]
     public async Task<IActionResult> ChangePasswordAsync(ChangePasswordRequest req, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-
-        if (req.OldPassword.IsNullOrEmpty() || req.NewPassword.IsNullOrEmpty()
-                                            || req.NewPassword == req.OldPassword)
-        {
-            return Problem(
-                title: "Invalid password data",
-                detail: "Old password or new password is missing or are the same",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
-        Log(LogLevel.Information, UserProfileControllerEventIds.ChangePasswordAttempt,
-            "Start change password attempt for user {userId}", UserId);
-
         if (UserId == Guid.Empty)
         {
             return StatusCode(StatusCodes.Status401Unauthorized);
@@ -171,9 +147,6 @@ public sealed class UserProfileController : BaseController<UserProfileController
                 statusCode: StatusCodes.Status500InternalServerError);
         }
 
-        Log(LogLevel.Information, UserProfileControllerEventIds.ChangePasswordSuccess,
-            "Password was successfully changed for user {userId}", UserId);
-
         return StatusCode(StatusCodes.Status204NoContent);
     }
 
@@ -184,14 +157,9 @@ public sealed class UserProfileController : BaseController<UserProfileController
     [EndpointSummary("Changes a password of existing user.")]
     [EndpointDescription("Accepts old password, new password from an authorized user.")]
     [HttpPost("forget-password")]
-    public async Task<IActionResult> ForgetPassword(ForgetPasswordRequest req, CancellationToken ct)
+    [ServiceFilter(typeof(ValidationFilter))]
+    public async Task<IActionResult> ForgetPasswordAsync(ForgetPasswordRequest req, CancellationToken ct)
     {
-        if (req?.Email == null || !req.Email.IsValidEmail())
-        {
-            return Problem(
-                title: "Not valid email",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
         ct.ThrowIfCancellationRequested();
         var res = await _passwordManagementService.SendPasswordResetConfirmationAsync(req.Email, ct);
         if (res.Failure)
@@ -220,17 +188,11 @@ public sealed class UserProfileController : BaseController<UserProfileController
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [HttpPost("reset-password")]
+    [ServiceFilter(typeof(ValidationFilter))]
     [EndpointSummary("Validates a request for password reset from email.")]
     [EndpointDescription("Accepts token, validates it.")]
-    public async Task<IActionResult> ResetPassword([FromQuery(Name = "token")] string token, CancellationToken ct)
+    public async Task<IActionResult> ResetPasswordAsync([FromQuery(Name = "token")] string token, CancellationToken ct)
     {
-        if (token.IsNullOrEmpty())
-        {
-            return Problem(
-                title: "Token is not provided",
-                detail: "Token is not provided",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
         ct.ThrowIfCancellationRequested();
         var res = await _passwordManagementService.ValidateResetPasswordRequestAsync(token, ct);
         if (res.Failure)
@@ -259,16 +221,13 @@ public sealed class UserProfileController : BaseController<UserProfileController
     [ProducesResponseType(401)]
     [ProducesResponseType(500)]
     [HttpPatch("profile-picture")]
+    [ServiceFilter(typeof(ValidationFilter))]
     [EndpointSummary("Adds a new profile picture")]
     [EndpointDescription("If a user doesn't have one, adds it, otherwise overwrites existing url")]
     public async Task<IActionResult> UpdatePictureProfileAsync(
         IFormFile file, CancellationToken ct)
     {
-        if (file == null || file.Length == 0)
-        {
-            return StatusCode(StatusCodes.Status400BadRequest, "No file uploaded.");
-        }
-
+        ct.ThrowIfCancellationRequested();
         var imgUploadRes = await _imageService.SaveImageAsync(
             file.OpenReadStream(), file.FileName, ct);
         if (imgUploadRes.Failure)

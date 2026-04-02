@@ -25,22 +25,14 @@ public sealed class CatalogController : BaseController<CatalogController>
     [ProducesResponseType(typeof(IEnumerable<TitleShortInfo>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ServiceFilter(typeof(ValidationFilter))]
     [AllowAnonymous]
     [HttpGet("search")]
     public async Task<ActionResult<IEnumerable<TitleShortInfo>>> SearchAsync(
         [FromQuery(Name = "term")] string searchTerm,
         CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(searchTerm))
-        {
-            return Problem(
-                title: "Invalid search term",
-                detail: "Search term must not be empty.",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
-        Log(LogLevel.Information, CatalogControllerEventIds.SearchAttempt, "Search attempt for term {term}",
-            searchTerm);
+        ct.ThrowIfCancellationRequested();
         var res = await _contentService.SearchTitlesAsync(searchTerm, ct);
         if (res.Failure)
         {
@@ -68,8 +60,7 @@ public sealed class CatalogController : BaseController<CatalogController>
         [FromQuery] FilterRequest filter,
         CancellationToken ct)
     {
-        Log(LogLevel.Information, CatalogControllerEventIds.FilterAttempt, "Filter attempt");
-
+        ct.ThrowIfCancellationRequested();
         var res = await _contentService.FilterTitlesAsync(filter, ct);
         if (res.Failure)
         {
@@ -95,16 +86,7 @@ public sealed class CatalogController : BaseController<CatalogController>
     [HttpGet("{titleId:int}")]
     public async Task<ActionResult<TitleInfo>> GetTitleAsync(int titleId, CancellationToken ct)
     {
-        if (titleId < 1)
-        {
-            return Problem(
-                title: "Invalid title id",
-                detail: "Title id must be greater than 0.",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
-        Log(LogLevel.Information, CatalogControllerEventIds.GetTitleAttempt, "Get title attempt for id {titleId}",
-            titleId);
+        ct.ThrowIfCancellationRequested();
         var res = await _contentService.GetTitleByIdAsync(titleId, ct);
         if (res.Failure)
         {
@@ -127,29 +109,10 @@ public sealed class CatalogController : BaseController<CatalogController>
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
-    [HttpGet("{titleId:int}/{seasonId:int}/{episodeId:int}")]
-    public async Task<ActionResult<EpisodeInfo>> GetEpisodeAsync(
-        int titleId, int seasonId, int episodeId,
-        CancellationToken ct)
+    [ServiceFilter(typeof(ValidationFilter))]
+    [HttpGet("episode/{episodeId:int}")]
+    public async Task<ActionResult<EpisodeInfo>> GetEpisodeAsync(int episodeId, CancellationToken ct)
     {
-        if (titleId < 1 || seasonId < 1 || episodeId < 1)
-        {
-            return Problem(
-                title: "Invalid parameters",
-                detail: "IDs must be greater than 0.",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
-        Log(LogLevel.Information, CatalogControllerEventIds.GetEpisodeAttempt,
-            "Get episode attempt for title {titleId} season {seasonId} episode {episodeId}", titleId, seasonId,
-            episodeId);
-
-        // No dedicated episode retrieval exists on IContentService in current repo.
-        // If you implement such a method, call it here and map the result. For now return NotImplemented:
-        Log(LogLevel.Warning, CatalogControllerEventIds.GetEpisodeFailed,
-            "Get episode not implemented for title {titleId} season {seasonId} episode {episodeId}", titleId, seasonId,
-            episodeId);
-
         return StatusCode(StatusCodes.Status501NotImplemented);
     }
 }

@@ -12,7 +12,10 @@ public abstract class BaseController<TController> : ControllerBase where TContro
     {
         Logger = logger;
     }
-    
+
+    protected string IpAddress =>
+        HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? "unknown";
+
     protected Guid UserId
     {
         get

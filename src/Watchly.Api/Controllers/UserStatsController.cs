@@ -1,7 +1,5 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Watchly.Api.Logging;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models.Stats;
 
@@ -30,15 +28,15 @@ public sealed class UserStatsController : BaseController<UserStatsController>
     [HttpGet("movie")]
     public async Task<ActionResult<MovieStatsResponse>> GetMovieStatsAsync(CancellationToken ct)
     {
-        Log(LogLevel.Information, UserStatsControllerEventIds.GetMovieAttempt,
-            "Get movie stats attempt for user {UserId}", UserId);
+        if (UserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
         ct.ThrowIfCancellationRequested();
         var res = await _userStatsService.GetUserMovieStatsAsync(UserId, ct);
         if (res.Failure)
         {
-            Log(LogLevel.Error, UserStatsControllerEventIds.GetMovieFailed,
-                "Get movie stats for user {UserId} failed: {error}", UserId, res.Error);
-
             return Problem(
                 title: "Get movie stats failed",
                 detail: res.Error,
@@ -58,15 +56,15 @@ public sealed class UserStatsController : BaseController<UserStatsController>
     [HttpGet("series")]
     public async Task<ActionResult<SeriesStatsResponse>> GetSeriesStatsAsync(CancellationToken ct)
     {
-        Log(LogLevel.Information, UserStatsControllerEventIds.GetSeriesAttempt,
-            "Get series stats attempt for user {UserId}", UserId);
-
+        if (UserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+        
+        ct.ThrowIfCancellationRequested();
         var res = await _userStatsService.GetUserTvSeriesStatsAsync(UserId, ct);
         if (res.Failure)
         {
-            Log(LogLevel.Error, UserStatsControllerEventIds.GetSeriesFailed,
-                "Get series stats for user {UserId} failed: {error}", UserId, res.Error);
-
             return Problem(
                 title: "Get series stats failed",
                 detail: res.Error,

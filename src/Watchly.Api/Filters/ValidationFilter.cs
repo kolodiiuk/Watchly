@@ -1,17 +1,40 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Watchly.Api.Validators;
 
 namespace Watchly.Api.Filters;
 
 public class ValidationFilter : IAsyncActionFilter
 {
-    private const string CatalogGetTitle = "Watchly.Api.Controllers.CatalogController.GetTitleAsync (Watchly.Api)";
-    
-    private readonly Dictionary<string, Func<IDictionary<string, object>, bool>> _handlersMap = new()
+    private static readonly Dictionary<string, Func<IDictionary<string, object>, bool>> _handlersMap = new()
     {
-        [CatalogGetTitle] = (map) => map.TryGetValue("titleId", out var r) && (int)r >= 1
+        [CatalogValidator.GetTitle] = CatalogValidator.ValidateGetTitle,
+        [CatalogValidator.GetEpisode] = CatalogValidator.ValidateGetEpisode,
+        [CatalogValidator.Search] = CatalogValidator.ValidateSearch,
+
+        [AuthValidator.SignUp] = AuthValidator.ValidateSignUp,
+        [AuthValidator.SignIn] = AuthValidator.ValidateSignIn,
+        [AuthValidator.SignOut] = AuthValidator.ValidateSignOut,
+        [AuthValidator.Refresh] = AuthValidator.ValidateRefresh,
+
+        [CommentValidator.GetCommentsTitle] = CommentValidator.ValidateGetCommentsTitle,
+        [CommentValidator.GetCommentsEpisode] = CommentValidator.ValidateGetCommentsEpisode,
+        [CommentValidator.LeaveComment] = CommentValidator.ValidateLeaveComment,
+        [CommentValidator.UpdateComment] = CommentValidator.ValidateUpdateComment,
+        [CommentValidator.DeleteComment] = CommentValidator.ValidateDeleteComment,
+
+        [VoteValidator.VoteTitle] = VoteValidator.ValidateVoteTitle,
+        [VoteValidator.ChangeVoteTitle] = VoteValidator.ValidateChangeVoteTitle,
+        [VoteValidator.VoteEpisode] = VoteValidator.ValidateVoteEpisode,
+        [VoteValidator.ChangeVoteEpisode] = VoteValidator.ValidateChangeVoteEpisode,
+
+        [UserProfileValidator.ChangeUsername] = UserProfileValidator.ValidateChangeUsername,
+        [UserProfileValidator.ChangePassword] = UserProfileValidator.ValidateChangePassword,
+        [UserProfileValidator.ForgetPassword] = UserProfileValidator.ValidateForgetPassword,
+        [UserProfileValidator.ResetPassword] = UserProfileValidator.ValidateResetPassword,
+        [UserProfileValidator.UpdatePictureProfile] = UserProfileValidator.ValidateUpdatePictureProfile
     };
-    
+
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var displayName = context.HttpContext.GetEndpoint()?.DisplayName;
@@ -19,7 +42,7 @@ public class ValidationFilter : IAsyncActionFilter
         var isValid = handler.Invoke(context.ActionArguments);
         if (isValid)
         {
-            next.Invoke();
+            await next.Invoke();
         }
 
         var problemDetails = new ProblemDetails
