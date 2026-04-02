@@ -10,6 +10,7 @@ using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
 using Watchly.Api.Extensions;
+using Watchly.Api.Filters;
 using Watchly.Api.Middleware;
 using Watchly.Application.Extensions;
 using Watchly.Application.Models;
@@ -81,6 +82,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddScoped<ValidationFilter>();
 builder.Services.AddServices();
 builder.Services.AddRepositories();
 builder.Services.RegisterCloudinary(builder.Configuration["Cloudinary:Cloud"],
