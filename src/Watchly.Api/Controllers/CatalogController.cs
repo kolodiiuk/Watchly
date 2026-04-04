@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Watchly.Api.Filters;
 using Watchly.Api.Logging;
 using Watchly.Application.Interfaces;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Content;
 
 namespace Watchly.Api.Controllers;
 
@@ -83,6 +84,7 @@ public sealed class CatalogController : BaseController<CatalogController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
     [ServiceFilter(typeof(ValidationFilter))]
+    [OutputCache]
     [HttpGet("{titleId:int}")]
     public async Task<ActionResult<TitleInfo>> GetTitleAsync(int titleId, CancellationToken ct)
     {

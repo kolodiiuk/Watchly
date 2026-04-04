@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Watchly.Application.Interfaces;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Comments;
+using Watchly.Application.Models.UserProfile;
 using Watchly.Domain.Entities;
 using Watchly.Domain.Utils;
 using Watchly.Infrastructure.DbContexts;

@@ -1,4 +1,6 @@
-namespace Watchly.Application.Models;
+using Watchly.Application.Models.UserProfile;
+
+namespace Watchly.Application.Models.Auth;
 
 public class SignInResponse
 {

@@ -1,5 +1,4 @@
-using Watchly.Application.Models;
-using Watchly.Domain.Entities;
+using Watchly.Application.Models.Comments;
 using Watchly.Domain.Utils;
 
 namespace Watchly.Application.Interfaces;

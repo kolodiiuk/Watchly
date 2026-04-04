@@ -13,7 +13,7 @@ using Watchly.Api.Extensions;
 using Watchly.Api.Filters;
 using Watchly.Api.Middleware;
 using Watchly.Application.Extensions;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Auth;
 using Watchly.Domain.Entities;
 using Watchly.Infrastructure.DbContexts;
 using Watchly.Infrastructure.Extensions;
