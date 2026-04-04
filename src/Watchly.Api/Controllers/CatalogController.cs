@@ -64,7 +64,7 @@ public sealed class CatalogController : BaseController<CatalogController>
         var res = await _contentService.FilterTitlesAsync(filter, ct);
         if (res.Failure)
         {
-            Log(LogLevel.Error, CatalogControllerEventIds.FilterFailed, 
+            Log(LogLevel.Error, CatalogControllerEventIds.FilterFailed,
                 "Filter failed: {error}", res.Error);
 
             return Problem(
@@ -116,14 +116,3 @@ public sealed class CatalogController : BaseController<CatalogController>
         return StatusCode(StatusCodes.Status501NotImplemented);
     }
 }
-
-public record TitleInfo(
-    int Id,
-    string Name,
-    string Overview,
-    string PosterUrl,
-    DateTime? ReleaseDate,
-    int Runtime,
-    float? AvgTmdbRating);
-
-public record EpisodeInfo(int TitleId, int SeasonId, int EpisodeId);

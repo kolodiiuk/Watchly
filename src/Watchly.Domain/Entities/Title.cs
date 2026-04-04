@@ -15,7 +15,7 @@ public sealed class Title
     /// </summary>
     public int Runtime { get; set; }
 
-    public ContentType ContentType { get; set; }
+    public TitleType ContentType { get; set; }
 
     public float? AvgTmdbRating { get; set; }
 
