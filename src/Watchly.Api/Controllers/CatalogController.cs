@@ -84,7 +84,7 @@ public sealed class CatalogController : BaseController<CatalogController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
     [ServiceFilter(typeof(ValidationFilter))]
-    [OutputCache]
+    [OutputCache(PolicyName = "TitleById")]
     [HttpGet("{titleId:int}")]
     public async Task<ActionResult<TitleInfo>> GetTitleAsync(int titleId, CancellationToken ct)
     {

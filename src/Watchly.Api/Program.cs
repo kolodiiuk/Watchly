@@ -82,6 +82,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.RegisterOutputCache(builder.Configuration.GetConnectionString("Redis"));
 builder.Services.AddScoped<ValidationFilter>();
 builder.Services.AddServices();
 builder.Services.AddRepositories();
@@ -205,6 +206,7 @@ try
     app.UseMiddleware<ExceptionHandlerMiddleware>();
     app.UseRouting();
     app.UseCors("AllowLocalhost5173");
+    app.UseOutputCache();
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
