@@ -13,5 +13,6 @@ public static class ServiceCollectionExtensions
         serviceCollection.AddScoped<IUserManagementService, UserManagementService>();
         serviceCollection.AddScoped<IPasswordManagementService, PasswordManagementService>();
         serviceCollection.AddScoped<ICommentService, CommentService>();
+        serviceCollection.AddScoped<IContentService, ContentService>();
     }
 }

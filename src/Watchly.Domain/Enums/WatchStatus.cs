@@ -1,4 +1,4 @@
-namespace Watchly.Domain.Entities;
+namespace Watchly.Domain.Enums;
 
 public enum WatchStatus
 {

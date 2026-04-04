@@ -1,4 +1,4 @@
-using System.Net;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Watchly.Api.Middleware;
 
@@ -26,54 +26,31 @@ public class ExceptionHandlerMiddleware
 
             _logger.LogError(ex, $"{errorId} : {ex.Message}");
 
-            httpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            httpContext.Response.StatusCode = 500;
 
-            var error = new ErrorInfo
+            var requestPath = httpContext.Request.Path.ToString();
+            var isFileRequest = requestPath.Contains("/files", StringComparison.OrdinalIgnoreCase) ||
+                                 requestPath.EndsWith(".pdf") ||
+                                 requestPath.EndsWith(".zip") ||
+                                 requestPath.EndsWith(".csv") ||
+                                 requestPath.EndsWith(".png") ||
+                                 requestPath.EndsWith(".jpg");
+
+            if (isFileRequest)
             {
-                Id = errorId,
-                ErrorMessage = $"Unhandled Error: {ex.Message}   {ex.Source}   {ex.StackTrace}"
+                httpContext.Response.ContentType = "text/plain";
+                await httpContext.Response.WriteAsync("Error: Unable to process file request.");
+            }
+
+            var problem = new ProblemDetails
+            {
+                Title = "Unhandled Exception",
+                Detail = $"Unhandled Error: {ex.Message}{Environment.NewLine}{ex.Source}{Environment.NewLine}{ex.StackTrace}",
+                Instance = requestPath,
+                Status = 500
             };
 
-
-            await HandldeFileRequestErrors(httpContext, error);
-        }
-    }
-
-    private static async Task HandldeFileRequestErrors(HttpContext httpContext, ErrorInfo error)
-    {
-        var requestPath = httpContext.Request.Path.ToString();
-        bool isFileRequest = requestPath.Contains("/files", StringComparison.OrdinalIgnoreCase) ||
-                             requestPath.EndsWith(".pdf") ||
-                             requestPath.EndsWith(".zip") ||
-                             requestPath.EndsWith(".csv") ||
-                             requestPath.EndsWith(".png") ||
-                             requestPath.EndsWith(".jpg");
-
-        if (isFileRequest)
-        {
-            httpContext.Response.ContentType = "text/plain";
-            await httpContext.Response.WriteAsync("Error: Unable to process file request.");
-        }
-        else
-        {
-            var acceptHeader = httpContext.Request.Headers["Accept"].ToString();
-
-            if (acceptHeader.Contains("text/html", StringComparison.OrdinalIgnoreCase))
-            {
-                httpContext.Response.ContentType = "text/html";
-                await httpContext.Response.WriteAsync($"<h1>Error</h1><p>{error.ErrorMessage}</p>");
-            }
-            else if (acceptHeader.Contains("application/xml", StringComparison.OrdinalIgnoreCase))
-            {
-                httpContext.Response.ContentType = "application/xml";
-                var xml = $"<Error><Id>{error.Id}</Id><ErrorMessage>{error.ErrorMessage}</ErrorMessage></Error>";
-                await httpContext.Response.WriteAsync(xml);
-            }
-            else
-            {
-                httpContext.Response.ContentType = "application/json";
-                await httpContext.Response.WriteAsJsonAsync(error);
-            }
+            await httpContext.Response.WriteAsJsonAsync(problem);
         }
     }
 }

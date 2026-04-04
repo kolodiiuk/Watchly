@@ -20,20 +20,20 @@ public sealed class UserManagementService : LoggingService<UserManagementService
 
     public async Task<Result> ChangeUserNameAsync(Guid userId, string userName)
     {
-        var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return Result.Fail("User is null");
-        }
-
-        var res = await _userManager.SetUserNameAsync(user, userName);
-        if (!res.Succeeded)
-        {
-            return Result.Fail(FormatIdentityError(res));
-        }
-
         try
         {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user is null)
+            {
+                return Result.Fail("User is null");
+            }
+
+            var res = await _userManager.SetUserNameAsync(user, userName);
+            if (!res.Succeeded)
+            {
+                return Result.Fail(FormatIdentityError(res));
+            }
+
             var updateRes = await _userManager.UpdateAsync(user);
             if (!updateRes.Succeeded)
             {
@@ -64,6 +64,28 @@ public sealed class UserManagementService : LoggingService<UserManagementService
         catch (Exception e)
         {
             return Result<UserInfo>.Fail(e.Message);
+        }
+    }
+
+    public async Task<Result> AddImageAsync(Guid userId, string absoluteUri)
+    {
+        try
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user is null)
+            {
+                return Result.Fail("No such user");
+            }
+
+            user.ProfilePictureUrl = absoluteUri;
+            await _userManager.UpdateAsync(user);
+
+            return Result.Success();
+        }
+        catch (Exception e)
+        {
+            return Result.Fail(
+                $"Error updating user: {e.Message}{Environment.NewLine}{e.InnerException?.Message ?? ""}");
         }
     }
 

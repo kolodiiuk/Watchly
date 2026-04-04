@@ -15,6 +15,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Watchly.Domain\Watchly.Domain.csproj" />
       <ProjectReference Include="..\Watchly.Infrastructure\Watchly.Infrastructure.csproj" />
+      <ProjectReference Include="..\Watchly.Shared\Watchly.Shared.csproj" />
     </ItemGroup>
 
 </Project>

@@ -9,6 +9,8 @@ using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
+using Watchly.Api.Extensions;
+using Watchly.Api.Filters;
 using Watchly.Api.Middleware;
 using Watchly.Application.Extensions;
 using Watchly.Application.Models;
@@ -80,8 +82,11 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddScoped<ValidationFilter>();
 builder.Services.AddServices();
 builder.Services.AddRepositories();
+builder.Services.RegisterCloudinary(builder.Configuration["Cloudinary:Cloud"],
+    builder.Configuration["Cloudinary:ApiKey"], builder.Configuration["Cloudinary:ApiSecret"]);
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
@@ -97,6 +102,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
         options.Password.RequiredLength = 8;
         options.User.RequireUniqueEmail = true;
     })
+    .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<WatchlyDbContext>()
     .AddDefaultTokenProviders();
 
@@ -155,7 +161,6 @@ builder.Services.AddAuthentication(options =>
         };
     });
 
-builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
