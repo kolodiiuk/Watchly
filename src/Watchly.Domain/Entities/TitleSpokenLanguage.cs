@@ -8,6 +8,8 @@ public sealed class TitleSpokenLanguage
     
     public int TitleId { get; set; }
 
+    public bool IsTvShow { get; set; }
+
     public SpokenLanguage SpokenLanguage { get; set; }
 
     public Title Title { get; set; }

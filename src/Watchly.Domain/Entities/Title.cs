@@ -2,7 +2,7 @@
 
 namespace Watchly.Domain.Entities;
 
-public sealed class Title
+public class Title
 {
     public int Id { get; set; }
 

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Watchly.Domain.Entities;
+using Watchly.Domain.Enums;
 
 namespace Watchly.Infrastructure.EntityConfigs;
 
@@ -24,6 +25,10 @@ internal sealed class TitleConfiguration : IEntityTypeConfiguration<Title>
         b.Property(t => t.IsAdult).IsRequired();
         b.Property(t => t.Tagline).HasMaxLength(500);
         b.Property(t => t.ContentType).IsRequired();
+
+        b.HasDiscriminator(t => t.ContentType)
+            .HasValue<Title>(TitleType.Movie)
+            .HasValue<TvShow>(TitleType.Series);
 
         b.HasMany(t => t.Votes)
             .WithOne(v => v.Title)
