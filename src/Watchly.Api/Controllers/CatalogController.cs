@@ -31,10 +31,12 @@ public sealed class CatalogController : BaseController<CatalogController>
     [HttpGet("search")]
     public async Task<ActionResult<IEnumerable<TitleShortInfo>>> SearchAsync(
         [FromQuery(Name = "term")] string searchTerm,
-        CancellationToken ct)
+        [FromQuery(Name = "page")] int page = 1,
+        [FromQuery(Name = "pageSize")] int pageSize = 20,
+        CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        var res = await _contentService.SearchTitlesAsync(searchTerm, ct);
+        var res = await _contentService.SearchTitlesAsync(searchTerm, pageSize, page, ct);
         if (res.Failure)
         {
             Log(LogLevel.Error, CatalogControllerEventIds.SearchFailed, "Search for term {term} failed: {error}",
@@ -46,7 +48,7 @@ public sealed class CatalogController : BaseController<CatalogController>
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        return StatusCode(StatusCodes.Status200OK, res.Value);
+        return res.Value.Any() ? StatusCode(StatusCodes.Status200OK, res.Value) : StatusCode(404);
     }
 
     [EndpointSummary("Filters titles.")]
@@ -59,7 +61,7 @@ public sealed class CatalogController : BaseController<CatalogController>
     [HttpGet("filter")]
     public async Task<ActionResult<IEnumerable<TitleShortInfo>>> FilterTitlesAsync(
         [FromQuery] FilterRequest filter,
-        CancellationToken ct)
+        CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
         var res = await _contentService.FilterTitlesAsync(filter, ct);
@@ -74,7 +76,7 @@ public sealed class CatalogController : BaseController<CatalogController>
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        return StatusCode(StatusCodes.Status200OK, res.Value);
+        return res.Value.Any() ? StatusCode(StatusCodes.Status200OK, res.Value) : StatusCode(404);
     }
 
     [EndpointSummary("Gets a specific title.")]
@@ -86,7 +88,7 @@ public sealed class CatalogController : BaseController<CatalogController>
     [ServiceFilter(typeof(ValidationFilter))]
     [OutputCache(PolicyName = "TitleById")]
     [HttpGet("{titleId:int}")]
-    public async Task<ActionResult<TitleInfo>> GetTitleAsync(int titleId, CancellationToken ct)
+    public async Task<ActionResult<TitleInfo>> GetTitleAsync(int titleId, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
         var res = await _contentService.GetTitleByIdAsync(titleId, ct);
@@ -113,7 +115,7 @@ public sealed class CatalogController : BaseController<CatalogController>
     [AllowAnonymous]
     [ServiceFilter(typeof(ValidationFilter))]
     [HttpGet("episode/{episodeId:int}")]
-    public async Task<ActionResult<EpisodeInfo>> GetEpisodeAsync(int episodeId, CancellationToken ct)
+    public async Task<ActionResult<EpisodeInfo>> GetEpisodeAsync(int episodeId, CancellationToken ct = default)
     {
         return StatusCode(StatusCodes.Status501NotImplemented);
     }

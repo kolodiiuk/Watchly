@@ -18,4 +18,6 @@ public sealed record FilterRequest
     public IntRange YearsRange { get; init; }
     [ModelBinder(BinderType = typeof(FloatRangeModelBinder))]
     public FloatRange RatingRange { get; init; }
+    public int Page { get; init; } = 1;
+    public int Size { get; init; } = 20;
 }

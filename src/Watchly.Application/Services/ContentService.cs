@@ -22,22 +22,63 @@ public class ContentService : IContentService
         throw new NotImplementedException();
     }
 
-    public Task<Result<IEnumerable<TitleShortInfo>>> SearchTitlesAsync(string searchTerm, CancellationToken ct)
+    public async Task<Result<IEnumerable<TitleShortInfo>>> SearchTitlesAsync(
+        string searchTerm, 
+        int pageSize, 
+        int page, 
+        CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        var pattern = $"%{searchTerm}%";
+        try
+        {
+            var query = _dbContext.Titles
+                .Where(t => EF.Functions.ILike(t.Name, pattern))
+                .OrderBy(t => t.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating))
+                .AsNoTracking();
+
+            return Result<IEnumerable<TitleShortInfo>>.Success(await query.ToListAsync(ct));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return Result<IEnumerable<TitleShortInfo>>.Fail(e.Message);
+        }
     }
 
     public async Task<Result<IEnumerable<TitleShortInfo>>> FilterTitlesAsync(
-        FilterRequest filterOptions, CancellationToken ct)
+        FilterRequest filterOptions, CancellationToken ct = default)
     {
-        IQueryable<Title> query = _dbContext.Titles;
-        query = ApplyFilters(filterOptions, query);
-        var results = query.Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating));
+        try
+        {
+            IQueryable<Title> query = _dbContext.Titles;
+            query = ApplyFilters(query, filterOptions);
+            var tsi = query
+                .OrderBy(t => t.Id)
+                .Skip((filterOptions.Page - 1) * filterOptions.Size)
+                .Take(filterOptions.Size)
+                .Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating))
+                .AsNoTracking();
+            var results = await tsi.ToListAsync(ct);
 
-        return Result<IEnumerable<TitleShortInfo>>.Success(await results.ToListAsync(ct));
+            return Result<IEnumerable<TitleShortInfo>>.Success(results);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return Result<IEnumerable<TitleShortInfo>>.Fail(e.Message);
+        }
     }
 
-    private static IQueryable<Title> ApplyFilters(FilterRequest filterOptions, IQueryable<Title> query)
+    private static IQueryable<Title> ApplyFilters(IQueryable<Title> query, FilterRequest filterOptions)
     {
         if (filterOptions.Genres?.Any() == true)
         {
