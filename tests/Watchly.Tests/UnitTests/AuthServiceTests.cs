@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Watchly.Application.Interfaces;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Auth;
 using Watchly.Application.Services;
 using Watchly.Domain.Entities;
 using Watchly.Domain.Utils;

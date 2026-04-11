@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using Watchly.Api.Filters;
 using Watchly.Api.Logging;
 using Watchly.Application.Interfaces;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Content;
 
 namespace Watchly.Api.Controllers;
 
@@ -30,10 +31,12 @@ public sealed class CatalogController : BaseController<CatalogController>
     [HttpGet("search")]
     public async Task<ActionResult<IEnumerable<TitleShortInfo>>> SearchAsync(
         [FromQuery(Name = "term")] string searchTerm,
-        CancellationToken ct)
+        [FromQuery(Name = "page")] int page = 1,
+        [FromQuery(Name = "pageSize")] int pageSize = 20,
+        CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        var res = await _contentService.SearchTitlesAsync(searchTerm, ct);
+        var res = await _contentService.SearchTitlesAsync(searchTerm, pageSize, page, ct);
         if (res.Failure)
         {
             Log(LogLevel.Error, CatalogControllerEventIds.SearchFailed, "Search for term {term} failed: {error}",
@@ -45,7 +48,7 @@ public sealed class CatalogController : BaseController<CatalogController>
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        return StatusCode(StatusCodes.Status200OK, res.Value);
+        return res.Value.Any() ? StatusCode(StatusCodes.Status200OK, res.Value) : StatusCode(404);
     }
 
     [EndpointSummary("Filters titles.")]
@@ -58,13 +61,13 @@ public sealed class CatalogController : BaseController<CatalogController>
     [HttpGet("filter")]
     public async Task<ActionResult<IEnumerable<TitleShortInfo>>> FilterTitlesAsync(
         [FromQuery] FilterRequest filter,
-        CancellationToken ct)
+        CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
         var res = await _contentService.FilterTitlesAsync(filter, ct);
         if (res.Failure)
         {
-            Log(LogLevel.Error, CatalogControllerEventIds.FilterFailed, 
+            Log(LogLevel.Error, CatalogControllerEventIds.FilterFailed,
                 "Filter failed: {error}", res.Error);
 
             return Problem(
@@ -73,7 +76,7 @@ public sealed class CatalogController : BaseController<CatalogController>
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        return StatusCode(StatusCodes.Status200OK, res.Value);
+        return res.Value.Any() ? StatusCode(StatusCodes.Status200OK, res.Value) : StatusCode(404);
     }
 
     [EndpointSummary("Gets a specific title.")]
@@ -83,8 +86,9 @@ public sealed class CatalogController : BaseController<CatalogController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
     [ServiceFilter(typeof(ValidationFilter))]
+    [OutputCache(PolicyName = "TitleById")]
     [HttpGet("{titleId:int}")]
-    public async Task<ActionResult<TitleInfo>> GetTitleAsync(int titleId, CancellationToken ct)
+    public async Task<ActionResult<TitleInfo>> GetTitleAsync(int titleId, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
         var res = await _contentService.GetTitleByIdAsync(titleId, ct);
@@ -111,19 +115,8 @@ public sealed class CatalogController : BaseController<CatalogController>
     [AllowAnonymous]
     [ServiceFilter(typeof(ValidationFilter))]
     [HttpGet("episode/{episodeId:int}")]
-    public async Task<ActionResult<EpisodeInfo>> GetEpisodeAsync(int episodeId, CancellationToken ct)
+    public async Task<ActionResult<EpisodeInfo>> GetEpisodeAsync(int episodeId, CancellationToken ct = default)
     {
         return StatusCode(StatusCodes.Status501NotImplemented);
     }
 }
-
-public record TitleInfo(
-    int Id,
-    string Name,
-    string Overview,
-    string PosterUrl,
-    DateTime? ReleaseDate,
-    int Runtime,
-    float? AvgTmdbRating);
-
-public record EpisodeInfo(int TitleId, int SeasonId, int EpisodeId);

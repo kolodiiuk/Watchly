@@ -33,6 +33,8 @@ public class WatchlyDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid
 
     public DbSet<Title> Titles { get; set; }
 
+    public DbSet<TvShow> TvShows { get; set; }
+
     public DbSet<TitleGenre> TitleGenres { get; set; }
 
     public DbSet<TitleProductionCompany> TitleProductionCompanies { get; set; }
@@ -64,7 +66,7 @@ public class WatchlyDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid
         if (!optionsBuilder.IsConfigured)
         {
             optionsBuilder.UseNpgsql(
-                "Host=localhost;Port=5432;Database=watchly;Username=nk;Password=G4thgw4GRETG%$WEgr,dfe45");
+                "Host=localhost;Port=5432;Database=watchly;Username=nk;Password=G4thgw4GRETG%WEgrdfe45");
         }
     }
 }

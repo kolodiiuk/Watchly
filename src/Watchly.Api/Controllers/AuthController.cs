@@ -3,7 +3,7 @@ using Watchly.Api.Dto.Auth;
 using Watchly.Api.Filters;
 using Watchly.Api.Logging;
 using Watchly.Application.Interfaces;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Auth;
 
 namespace Watchly.Api.Controllers;
 

@@ -2,7 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Watchly.Application.Interfaces;
-using Watchly.Application.Models;
+using Watchly.Application.Models.UserProfile;
 using Watchly.Domain.Entities;
 using Watchly.Domain.Utils;
 

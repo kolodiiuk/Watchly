@@ -2,7 +2,7 @@
 
 namespace Watchly.Domain.Entities;
 
-public sealed class Title
+public class Title
 {
     public int Id { get; set; }
 
@@ -15,7 +15,7 @@ public sealed class Title
     /// </summary>
     public int Runtime { get; set; }
 
-    public ContentType ContentType { get; set; }
+    public TitleType ContentType { get; set; }
 
     public float? AvgTmdbRating { get; set; }
 

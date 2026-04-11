@@ -1,6 +1,6 @@
 using Watchly.Domain.Entities;
 
-namespace Watchly.Application.Models;
+namespace Watchly.Application.Models.UserProfile;
 
 public class UserDto
 {
