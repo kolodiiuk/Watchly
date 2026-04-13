@@ -1,15 +1,11 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using Watchly.Api.Dto.Auth;
 using Watchly.Api.Dto.UserProfile;
 using Watchly.Api.Filters;
 using Watchly.Api.Logging;
 using Watchly.Application.Interfaces;
-using Watchly.Application.Models;
 using Watchly.Application.Models.UserProfile;
-using Watchly.Domain.Extensions;
 using Watchly.Infrastructure.Interfaces;
 
 namespace Watchly.Api.Controllers;
@@ -38,7 +34,7 @@ public sealed class UserProfileController : BaseController<UserProfileController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [HttpPost("verify")]
-    [ServiceFilter(typeof(ValidationFilter))]
+    // [ServiceFilter(typeof(ValidationFilter))]
     [EndpointSummary("Verifies the caller's JWT and returns profile data.")]
     [EndpointDescription(
         "Reads the user identifier from claims, loads the user entity, and confirms the token is still valid.")]

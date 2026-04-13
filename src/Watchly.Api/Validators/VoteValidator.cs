@@ -9,6 +9,7 @@ internal static class VoteValidator
 
     private const string TitleId = "titleId";
     private const string EpisodeId = "episodeId";
+    private const string VoteId = "voteId";
     private const string Value = "value";
 
     internal static bool ValidateVoteTitle(IDictionary<string, object> map)
@@ -22,9 +23,9 @@ internal static class VoteValidator
 
     internal static bool ValidateChangeVoteTitle(IDictionary<string, object> map)
     {
-        return map.TryGetValue(TitleId, out var titleId)
-               && titleId is int parsedTitleId
-               && parsedTitleId >= 1
+        return map.TryGetValue(VoteId, out var voteId)
+               && voteId is int parsedVoteId
+               && parsedVoteId >= 1
                && map.TryGetValue(Value, out var value)
                && IsVoteValueValid((short)value);
     }
@@ -40,9 +41,9 @@ internal static class VoteValidator
 
     internal static bool ValidateChangeVoteEpisode(IDictionary<string, object> map)
     {
-        return map.TryGetValue(EpisodeId, out var episodeId)
-               && episodeId is int parsedEpisodeId
-               && parsedEpisodeId >= 1
+        return map.TryGetValue(VoteId, out var voteId)
+               && voteId is int parsedVoteId
+               && parsedVoteId >= 1
                && map.TryGetValue(Value, out var value)
                && IsVoteValueValid((short)value);
     }
