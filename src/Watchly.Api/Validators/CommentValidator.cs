@@ -1,5 +1,5 @@
 using Watchly.Api.Dto.Comments;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Comments;
 
 namespace Watchly.Api.Validators;
 

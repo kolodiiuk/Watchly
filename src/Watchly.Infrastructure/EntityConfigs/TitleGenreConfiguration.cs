@@ -12,6 +12,7 @@ internal sealed class TitleGenreConfiguration : IEntityTypeConfiguration<TitleGe
 
         builder.Property(tg => tg.Id);
         builder.Property(tg => tg.TitleId);
+        builder.Property(tg => tg.IsTvShow).IsRequired();
         builder.Property(tg => tg.GenreId);
 
         builder.HasOne(tg => tg.Title)

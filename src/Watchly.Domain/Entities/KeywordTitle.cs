@@ -5,6 +5,8 @@ public sealed class KeywordTitle
     public int Id { get; set; }
 
     public int TitleId { get; set; }
+
+    public bool IsTvShow { get; set; }
     
     public int KeywordId { get; set; }
 

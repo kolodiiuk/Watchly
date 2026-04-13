@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Watchly.Api.Dto.Comments;
 using Watchly.Api.Filters;
 using Watchly.Application.Interfaces;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Comments;
 
 namespace Watchly.Api.Controllers;
 

@@ -8,6 +8,7 @@ using Watchly.Api.Filters;
 using Watchly.Api.Logging;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models;
+using Watchly.Application.Models.UserProfile;
 using Watchly.Domain.Extensions;
 using Watchly.Infrastructure.Interfaces;
 

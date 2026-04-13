@@ -13,6 +13,7 @@ internal sealed class TitleSpokenLanguageConfiguration : IEntityTypeConfiguratio
         builder.Property(tg => tg.Id);
         builder.Property(tg => tg.SpokenLanguageId);
         builder.Property(tg => tg.TitleId);
+        builder.Property(tg => tg.IsTvShow).IsRequired();
 
         builder.HasOne(tg => tg.Title)
             .WithMany(t => t.TitleSpokenLanguages)
