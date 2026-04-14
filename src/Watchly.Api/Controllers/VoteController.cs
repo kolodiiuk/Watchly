@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Watchly.Api.Filters;
 using Watchly.Application.Interfaces;
-using ChangeVoteDto = Watchly.Application.Interfaces.ChangeVoteDto;
-using VoteDto = Watchly.Application.Interfaces.VoteDto;
 
 namespace Watchly.Api.Controllers;
 
@@ -24,11 +22,16 @@ public class VoteController : BaseController<VoteController>
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    [HttpPost("title")]
+    [HttpPost("title/{titleId:int}/{value:int}")]
     [ServiceFilter(typeof(ValidationFilter))]
-    public async Task<IActionResult> VoteTitleAsync(int titleId, VoteDto voteDto, CancellationToken ct)
+    public async Task<IActionResult> VoteTitleAsync(int titleId, short value, CancellationToken ct)
     {
-        var res = await _voteService.VoteTitleAsync(titleId, voteDto, UserId, ct);
+        if (UserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        var res = await _voteService.VoteTitleAsync(titleId, value, UserId, ct);
         if (res.Failure)
         {
             return Problem(
@@ -45,17 +48,16 @@ public class VoteController : BaseController<VoteController>
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    [HttpPut("title")]
+    [HttpPatch("title/{voteId:int}/{value:int}")]
     [ServiceFilter(typeof(ValidationFilter))]
-    public async Task<IActionResult> ChangeVoteTitleAsync(int titleId, ChangeVoteDto changeVoteDto,
-        CancellationToken ct)
+    public async Task<IActionResult> ChangeVoteTitleAsync(int voteId, short value, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
         {
             return Unauthorized();
         }
 
-        var res = await _voteService.ChangeVoteTitleAsync(titleId, changeVoteDto, UserId, ct);
+        var res = await _voteService.ChangeVoteAsync(voteId, value, UserId, ct);
         if (res.Failure)
         {
             return Problem(
@@ -72,16 +74,16 @@ public class VoteController : BaseController<VoteController>
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    [HttpPost("vote/{episodeId:int}")]
+    [HttpPost("episode/{episodeId:int}/{value:int}")]
     [ServiceFilter(typeof(ValidationFilter))]
-    public async Task<IActionResult> VoteAsync(int episodeId, VoteDto voteDto, CancellationToken ct)
+    public async Task<IActionResult> VoteAsync(int episodeId, short value, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
         {
             return Unauthorized();
         }
 
-        var res = await _voteService.VoteEpisodeAsync(episodeId, voteDto, UserId, ct);
+        var res = await _voteService.VoteEpisodeAsync(episodeId, value, UserId, ct);
         if (res.Failure)
         {
             return Problem(
@@ -98,17 +100,16 @@ public class VoteController : BaseController<VoteController>
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    [HttpPut("{episodeId:int}")]
+    [HttpPatch("episode/{voteId:int}/{value:int}")]
     [ServiceFilter(typeof(ValidationFilter))]
-    public async Task<IActionResult> ChangeVoteAsync(int episodeId, ChangeVoteDto changeVoteDto,
-        CancellationToken ct)
+    public async Task<IActionResult> ChangeVoteAsync(int voteId, short value, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
         {
             return Unauthorized();
         }
 
-        var res = await _voteService.ChangeVoteEpisodeAsync(episodeId, changeVoteDto, UserId, ct);
+        var res = await _voteService.ChangeVoteAsync(voteId, value, UserId, ct);
         if (res.Failure)
         {
             return Problem(

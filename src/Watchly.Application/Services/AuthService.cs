@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TimeZoneConverter;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models.Auth;
 using Watchly.Application.Models.UserProfile;
@@ -12,6 +13,8 @@ namespace Watchly.Application.Services;
 
 public class AuthService : LoggingService<AuthService>, IAuthService
 {
+    private static readonly TimeZoneInfo Tz = TZConvert.GetTimeZoneInfo("Europe/Kyiv");
+
     private readonly IJwtService _jwtService;
 
     private readonly IRefreshTokenRepository _refreshTokenRepository;
@@ -119,7 +122,9 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             return Result<RefreshTokenResponse>.Fail("Token revoked");
         }
 
-        if (storedRefreshToken.Expires <= DateTime.UtcNow)
+        var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Tz);
+        var expiresLocalTime = TimeZoneInfo.ConvertTimeFromUtc(storedRefreshToken.Expires, Tz);
+        if (expiresLocalTime <= localTime)
         {
             // automatic revocation by expiration date
             return Result<RefreshTokenResponse>.Fail("Token expired");
@@ -147,12 +152,16 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             return Result<RefreshTokenResponse>.Fail(addTokenRes.Error);
         }
 
+        var roles = await _userManager.GetRolesAsync(user);
+        var role = roles.FirstOrDefault();
+
         return Result<RefreshTokenResponse>.Success(new RefreshTokenResponse
         {
             Token = newToken,
             RefreshToken = newRefreshToken,
             Id = storedRefreshToken.User.Id,
             Email = storedRefreshToken.User.Email,
+            NormalizedRoleName = role ?? ""
         });
     }
 
@@ -239,7 +248,8 @@ public class AuthService : LoggingService<AuthService>, IAuthService
     private SignInResponse CreateSignInResponse(
         TokensResponse tokens, string email, string userName, Guid userId, IList<string> userRoles)
     {
-        var tokenExpiration = DateTime.UtcNow.AddMinutes(
+        var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Tz);
+        var tokenExpiration = localTime.AddMinutes(
             Convert.ToDouble(_jwtOptions.TokenExpirationMinutes));
 
         return new SignInResponse

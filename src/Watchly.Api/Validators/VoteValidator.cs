@@ -1,5 +1,3 @@
-﻿using Watchly.Application.Interfaces;
-
 namespace Watchly.Api.Validators;
 
 internal static class VoteValidator
@@ -9,27 +7,27 @@ internal static class VoteValidator
     internal const string VoteEpisode = "Watchly.Api.Controllers.VoteController.VoteAsync (Watchly.Api)";
     internal const string ChangeVoteEpisode = "Watchly.Api.Controllers.VoteController.ChangeVoteAsync (Watchly.Api)";
 
-    internal const string TitleId = "titleId";
-    internal const string EpisodeId = "episodeId";
-    internal const string VoteDtoArgument = "voteDto";
-    internal const string ChangeVoteDtoArgument = "changeVoteDto";
+    private const string TitleId = "titleId";
+    private const string EpisodeId = "episodeId";
+    private const string VoteId = "voteId";
+    private const string Value = "value";
 
     internal static bool ValidateVoteTitle(IDictionary<string, object> map)
     {
         return map.TryGetValue(TitleId, out var titleId)
                && titleId is int parsedTitleId
                && parsedTitleId >= 1
-               && map.TryGetValue(VoteDtoArgument, out var voteDto)
-               && voteDto is VoteDto;
+               && map.TryGetValue(Value, out var value)
+               && IsVoteValueValid((short)value);
     }
 
     internal static bool ValidateChangeVoteTitle(IDictionary<string, object> map)
     {
-        return map.TryGetValue(TitleId, out var titleId)
-               && titleId is int parsedTitleId
-               && parsedTitleId >= 1
-               && map.TryGetValue(ChangeVoteDtoArgument, out var changeVoteDto)
-               && changeVoteDto is ChangeVoteDto;
+        return map.TryGetValue(VoteId, out var voteId)
+               && voteId is int parsedVoteId
+               && parsedVoteId >= 1
+               && map.TryGetValue(Value, out var value)
+               && IsVoteValueValid((short)value);
     }
 
     internal static bool ValidateVoteEpisode(IDictionary<string, object> map)
@@ -37,16 +35,18 @@ internal static class VoteValidator
         return map.TryGetValue(EpisodeId, out var episodeId)
                && episodeId is int parsedEpisodeId
                && parsedEpisodeId >= 1
-               && map.TryGetValue(VoteDtoArgument, out var voteDto)
-               && voteDto is VoteDto;
+               && map.TryGetValue(Value, out var value)
+               && IsVoteValueValid((short)value);
     }
 
     internal static bool ValidateChangeVoteEpisode(IDictionary<string, object> map)
     {
-        return map.TryGetValue(EpisodeId, out var episodeId)
-               && episodeId is int parsedEpisodeId
-               && parsedEpisodeId >= 1
-               && map.TryGetValue(ChangeVoteDtoArgument, out var changeVoteDto)
-               && changeVoteDto is ChangeVoteDto;
+        return map.TryGetValue(VoteId, out var voteId)
+               && voteId is int parsedVoteId
+               && parsedVoteId >= 1
+               && map.TryGetValue(Value, out var value)
+               && IsVoteValueValid((short)value);
     }
+
+    private static bool IsVoteValueValid(short v) => v >= 1 && v <= 10;
 }
