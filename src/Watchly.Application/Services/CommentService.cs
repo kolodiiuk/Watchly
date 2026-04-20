@@ -100,6 +100,11 @@ public sealed class CommentService : ICommentService
             }
 
             var comment = await _dbContext.Comments.FirstOrDefaultAsync(c => c.Id == commentId, ct);
+            if (comment is null)
+            {
+                return Result.Fail("comment is not found");
+            }
+
             if (comment.UserId != userId)
             {
                 return Result.Fail("user doesn't own comment");
@@ -138,6 +143,11 @@ public sealed class CommentService : ICommentService
             }
 
             var comment = await _dbContext.Comments.FirstOrDefaultAsync(c => c.Id == commentId, ct);
+            if (comment is null)
+            {
+                return Result.Fail("comment is not found");
+            }
+
             if (comment.UserId != userId)
             {
                 return Result.Fail("user doesn't own comment");
@@ -207,4 +217,3 @@ public sealed class CommentService : ICommentService
         return comments;
     }
 }
-

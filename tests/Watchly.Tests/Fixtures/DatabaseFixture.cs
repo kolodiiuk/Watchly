@@ -4,22 +4,29 @@ namespace Watchly.Tests.Fixtures;
 
 public class DatabaseFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:15-alpine")
-        .WithDatabase("watchly")
-        .WithUsername("nk")
-        .WithPassword("G4thgw4GRETG%$WEgr,dfe45")
-        .Build();
+    private PostgreSqlContainer? _dbContainer;
+    private string? _connectionString;
 
-    public string ConnectionString => _dbContainer.GetConnectionString();
+    public string ConnectionString => _connectionString ?? throw new InvalidOperationException("Container not started yet");
 
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        return _dbContainer.StartAsync();
+        _dbContainer = new PostgreSqlBuilder()
+            .WithImage("postgres:15-alpine")
+            .WithDatabase("watchly")
+            .WithUsername("nk")
+            .WithPassword("G4thgw4GRETG%$WEgr,dfe45")
+            .Build();
+
+        await _dbContainer.StartAsync();
+        _connectionString = _dbContainer.GetConnectionString();
     }
 
-    public Task DisposeAsync()
+    public async Task DisposeAsync()
     {
-        return _dbContainer.DisposeAsync().AsTask();
+        if (_dbContainer != null)
+        {
+            await _dbContainer.DisposeAsync();
+        }
     }
 }

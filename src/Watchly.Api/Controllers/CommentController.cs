@@ -43,8 +43,8 @@ public class CommentController : BaseController<CommentController>
         return StatusCode(StatusCodes.Status200OK, res.Value);
     }
 
-    [EndpointSummary("Gets comments for a title.")]
-    [EndpointDescription("Retrieves all comments associated with the specified title.")]
+    [EndpointSummary("Gets comments for an episode.")]
+    [EndpointDescription("Retrieves all comments associated with the specified episode.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

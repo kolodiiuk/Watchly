@@ -11,10 +11,10 @@ internal static class CommentValidator
     internal const string UpdateComment = "Watchly.Api.Controllers.CommentController.UpdateCommentAsync (Watchly.Api)";
     internal const string DeleteComment = "Watchly.Api.Controllers.CommentController.DeleteCommentAsync (Watchly.Api)";
 
-    internal const string Request = "req";
-    internal const string CommentId = "commentId";
-    internal const string EpisodeId = "episodeId";
-    internal const string TitleId = "titleId";
+    private const string Request = "req";
+    private const string CommentId = "commentId";
+    private const string EpisodeId = "episodeId";
+    private const string TitleId = "titleId";
 
     internal static bool ValidateGetCommentsTitle(IDictionary<string, object> map)
     {

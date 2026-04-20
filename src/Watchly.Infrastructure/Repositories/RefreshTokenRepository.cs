@@ -146,7 +146,7 @@ public sealed class RefreshTokenRepository : LoggingService<RefreshTokenReposito
             var rows = await _dbContext.Database.ExecuteSqlInterpolatedAsync(
                 $"""
                        update "refresh_tokens"
-                       set "revoked" = {revoked}
+                       set "revoked" = {revoked},
                            "revoked_by_ip" = {revokedByIp},
                            "replaced_by_token" = NULL
                        where "user_id" = {userId}
