@@ -34,7 +34,6 @@ public sealed class UserProfileController : BaseController<UserProfileController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [HttpPost("verify")]
-    // [ServiceFilter(typeof(ValidationFilter))]
     [EndpointSummary("Verifies the caller's JWT and returns profile data.")]
     [EndpointDescription(
         "Reads the user identifier from claims, loads the user entity, and confirms the token is still valid.")]
