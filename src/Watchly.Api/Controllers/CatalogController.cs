@@ -5,6 +5,7 @@ using Watchly.Api.Filters;
 using Watchly.Api.Logging;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models.Content;
+using Watchly.Domain.Entities;
 
 namespace Watchly.Api.Controllers;
 
@@ -117,6 +118,19 @@ public sealed class CatalogController : BaseController<CatalogController>
     [HttpGet("episode/{episodeId:int}")]
     public async Task<ActionResult<EpisodeInfo>> GetEpisodeAsync(int episodeId, CancellationToken ct = default)
     {
-        return StatusCode(StatusCodes.Status501NotImplemented);
+        ct.ThrowIfCancellationRequested();
+        var res = await _contentService.GetTitleByIdAsync(episodeId, ct);
+        if (res.Failure)
+        {
+            Log(LogLevel.Error, CatalogControllerEventIds.GetEpisodeFailed, "Get episode {episodeId} failed: {error}",
+                episodeId, res.Error);
+
+            return Problem(
+                title: "Get episode failed",
+                detail: res.Error,
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        return StatusCode(StatusCodes.Status200OK, res.Value);
     }
 }

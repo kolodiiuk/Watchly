@@ -8,6 +8,8 @@ public interface IContentService
 {
     Task<Result<Title>> GetTitleByIdAsync(int titleId, CancellationToken ct);
 
+    Task<Result<Episode>> GetEpisodeByIdAsync(int episodeId, CancellationToken ct);
+
     Task<Result<IEnumerable<TitleShortInfo>>> SearchTitlesAsync(string searchTerm, int pageSize, int page, CancellationToken ct);
     
     Task<Result<IEnumerable<TitleShortInfo>>> FilterTitlesAsync(

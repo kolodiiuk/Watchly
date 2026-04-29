@@ -40,6 +40,29 @@ public class ContentService : IContentService
         }
     }
 
+    public async Task<Result<Episode>> GetEpisodeByIdAsync(int episodeId, CancellationToken ct)
+    {
+        try
+        {
+            var episode = await _dbContext.Episodes
+                .Where(e => e.Id == episodeId)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ct);
+
+            return episode is null
+                ? Result<Episode>.Fail($"Episode with id {episodeId} was not found.")
+                : Result<Episode>.Success(episode);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return Result<Episode>.Fail(e.Message);
+        }
+    }
+
     public async Task<Result<IEnumerable<TitleShortInfo>>> SearchTitlesAsync(
         string searchTerm, 
         int pageSize, 
