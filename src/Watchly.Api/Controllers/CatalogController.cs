@@ -119,7 +119,7 @@ public sealed class CatalogController : BaseController<CatalogController>
     public async Task<ActionResult<EpisodeInfo>> GetEpisodeAsync(int episodeId, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        var res = await _contentService.GetTitleByIdAsync(episodeId, ct);
+        var res = await _contentService.GetEpisodeByIdAsync(episodeId, ct);
         if (res.Failure)
         {
             Log(LogLevel.Error, CatalogControllerEventIds.GetEpisodeFailed, "Get episode {episodeId} failed: {error}",

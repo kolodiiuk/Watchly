@@ -6,7 +6,7 @@ namespace Watchly.Application.Interfaces;
 
 public interface IContentService
 {
-    Task<Result<Title>> GetTitleByIdAsync(int titleId, CancellationToken ct);
+    Task<Result<TitleInfo>> GetTitleByIdAsync(int titleId, CancellationToken ct);
 
     Task<Result<Episode>> GetEpisodeByIdAsync(int episodeId, CancellationToken ct);
 

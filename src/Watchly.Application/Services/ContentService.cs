@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models.Content;
 using Watchly.Domain.Entities;
@@ -17,18 +18,41 @@ public class ContentService : IContentService
         _dbContext = dbContext;
     }
 
-    public async Task<Result<Title>> GetTitleByIdAsync(int titleId, CancellationToken ct)
+    public async Task<Result<TitleInfo>> GetTitleByIdAsync(int titleId, CancellationToken ct)
     {
         try
         {
-            var title = await _dbContext.Titles
-                .Where(t => t.Id == titleId)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(ct);
+            var query =
+                from t in _dbContext.Titles
+                where t.Id == titleId
+                select new TitleInfo(
+                    t.Id,
+                    t.ReleaseDate,
+                    t.Runtime,
+                    t.ContentType,
+                    t.AvgTmdbRating,
+                    t.IsAdult,
+                    t.Name,
+                    t.Overview,
+                    t.PosterUrl,
+                    t.Tagline,
+                    t.Director,
+                    t.Actors,
+                    t.LocalizationLanguages,
 
-            return title is null
-                ? Result<Title>.Fail($"Title with id {titleId} was not found.")
-                : Result<Title>.Success(title);
+                    t.Votes.Any() ? (float)t.Votes.Average(v => v.Value) : 0,
+                    t.Votes.Count(),
+
+                    t.TitleProductionCompanies.Select(pc => pc.ProductionCompany).ToList(),
+                    t.TitleGenres.Select(g => g.Genre).ToList(),
+                    t.Seasons.ToList(),
+                    t.TitleSpokenLanguages.Select(sl => sl.SpokenLanguage).ToList()
+                );
+
+            TitleInfo result = await query.FirstOrDefaultAsync(ct);
+            return result is null
+                ? Result<TitleInfo>.Fail($"Title with id {titleId} was not found.")
+                : Result<TitleInfo>.Success(result);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -36,7 +60,7 @@ public class ContentService : IContentService
         }
         catch (Exception e)
         {
-            return Result<Title>.Fail(e.Message);
+            return Result<TitleInfo>.Fail(e.Message);
         }
     }
 
@@ -64,9 +88,9 @@ public class ContentService : IContentService
     }
 
     public async Task<Result<IEnumerable<TitleShortInfo>>> SearchTitlesAsync(
-        string searchTerm, 
-        int pageSize, 
-        int page, 
+        string searchTerm,
+        int pageSize,
+        int page,
         CancellationToken ct = default)
     {
         var pattern = $"%{searchTerm}%";
