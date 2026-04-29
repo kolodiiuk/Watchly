@@ -178,6 +178,7 @@ public sealed class CommentService : ICommentService
         var comments = _dbContext.Comments
             .Include(c => c.User)
             .Where(c => c.EpisodeId == id)
+            .Where(c => !c.IsDeleted)
             .Select(c => new CommentDto(
                 c.Id,
                 c.EpisodeId.Value,
@@ -200,6 +201,7 @@ public sealed class CommentService : ICommentService
         var comments = _dbContext.Comments
             .Include(c => c.User)
             .Where(c => c.TitleId == id)
+            .Where(c => !c.IsDeleted)
             .Select(c => new CommentDto(
                 c.Id,
                 c.TitleId.Value,
