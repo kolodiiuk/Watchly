@@ -45,7 +45,19 @@ public class ContentService : IContentService
 
                     t.TitleProductionCompanies.Select(pc => pc.ProductionCompany).ToList(),
                     t.TitleGenres.Select(g => g.Genre).ToList(),
-                    t.Seasons.ToList(),
+                    t.Seasons.Select(s => new SeasonInfo(
+                        s.Id,
+                        s.OrdinalNumber,
+                        s.Name,
+                        s.TitleId,
+                        s.Title.Name,
+                        s.Episodes.Select(e => new EpisodeShortInfo(
+                            e.Id,
+                            e.Runtime,
+                            e.Name,
+                            e.Votes.Any() ? (float)e.Votes.Average(v => v.Value) : 0
+                        )).ToList()
+                    )).ToList(),
                     t.TitleSpokenLanguages.Select(sl => sl.SpokenLanguage).ToList()
                 );
 
@@ -64,18 +76,36 @@ public class ContentService : IContentService
         }
     }
 
-    public async Task<Result<Episode>> GetEpisodeByIdAsync(int episodeId, CancellationToken ct)
+    public async Task<Result<EpisodeInfo>> GetEpisodeByIdAsync(int episodeId, CancellationToken ct)
     {
         try
         {
-            var episode = await _dbContext.Episodes
-                .Where(e => e.Id == episodeId)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(ct);
+            var query =
+               from e in _dbContext.Episodes
+               where e.Id == episodeId
+               select new EpisodeInfo(
+                   e.Id,
+                   e.SeasonId,
+                   e.OrdinalNumber,
+                   e.Runtime,
+                   e.Name,
+                   e.PosterUrl,
+                   e.Season != null ? new SeasonShortInfo(
+                       e.Season.Id, 
+                       e.Season.OrdinalNumber, 
+                       e.Season.Name,
+                       e.Season.TitleId,
+                       e.Season.Title.Name
+                   ) : null,
 
-            return episode is null
-                ? Result<Episode>.Fail($"Episode with id {episodeId} was not found.")
-                : Result<Episode>.Success(episode);
+                   e.Votes.Any() ? (float)e.Votes.Average(v => v.Value) : 0,
+                   e.Votes.Count()
+               );
+
+            EpisodeInfo result = await query.FirstOrDefaultAsync(ct);
+            return result is null
+                ? Result<EpisodeInfo>.Fail($"Episode with id {episodeId} was not found.")
+                : Result<EpisodeInfo>.Success(result);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -83,7 +113,7 @@ public class ContentService : IContentService
         }
         catch (Exception e)
         {
-            return Result<Episode>.Fail(e.Message);
+            return Result<EpisodeInfo>.Fail(e.Message);
         }
     }
 

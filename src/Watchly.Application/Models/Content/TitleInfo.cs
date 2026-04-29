@@ -21,6 +21,6 @@ public record TitleInfo(
     int VoteCount,
     IEnumerable<ProductionCompany> ProductionCompanies,
     IEnumerable<Genre> Genres,
-    IEnumerable<Season> Seasons,
+    IEnumerable<SeasonInfo> Seasons,
     IEnumerable<SpokenLanguage> SpokenLanguages
     );
