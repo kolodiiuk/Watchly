@@ -7,7 +7,7 @@ public record TitleInfo(
     int Id,
     DateTime? ReleaseDate,
     int Runtime,
-    TitleType ContentType,
+    TitleType TitleType,
     float? AvgTmdbRating,
     bool IsAdult,
     string Name,
