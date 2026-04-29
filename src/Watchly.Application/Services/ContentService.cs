@@ -17,9 +17,27 @@ public class ContentService : IContentService
         _dbContext = dbContext;
     }
 
-    public Task<Result<Title>> GetTitleByIdAsync(int titleId, CancellationToken ct)
+    public async Task<Result<Title>> GetTitleByIdAsync(int titleId, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var title = await _dbContext.Titles
+                .Where(t => t.Id == titleId)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(ct);
+
+            return title is null
+                ? Result<Title>.Fail($"Title with id {titleId} was not found.")
+                : Result<Title>.Success(title);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return Result<Title>.Fail(e.Message);
+        }
     }
 
     public async Task<Result<IEnumerable<TitleShortInfo>>> SearchTitlesAsync(
