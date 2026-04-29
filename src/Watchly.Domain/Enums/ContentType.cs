@@ -2,7 +2,7 @@ namespace Watchly.Domain.Enums;
 
 public enum ContentType
 {
-    Episode = 0,
+    Movie = 0,
 
-    Movie = 1, 
+    Episode = 1,
 }
