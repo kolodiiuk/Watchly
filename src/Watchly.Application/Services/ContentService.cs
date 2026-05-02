@@ -152,9 +152,10 @@ public class ContentService : IContentService
         try
         {
             IQueryable<Title> query = _dbContext.Titles;
+            var orderBy = BuildOrderBy(filterOptions.SortBy);
+            query = orderBy(query);
             query = ApplyFilters(query, filterOptions);
             var tsi = query
-                .OrderBy(t => t.Id)
                 .Skip((filterOptions.Page - 1) * filterOptions.Size)
                 .Take(filterOptions.Size)
                 .Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating))
@@ -171,6 +172,21 @@ public class ContentService : IContentService
         {
             return Result<IEnumerable<TitleShortInfo>>.Fail(e.Message);
         }
+    }
+
+    private static Func<IQueryable<Title>, IOrderedQueryable<Title>> BuildOrderBy(SortBy sortBy)
+    {
+        Func<IQueryable<Title>, IOrderedQueryable<Title>> orderBy = sortBy switch
+        {
+            SortBy.ReleaseDateAsc => q => q.OrderBy(title => title.ReleaseDate),
+            SortBy.TmdbRatingAsc => q => q.OrderBy(title => title.AvgTmdbRating),
+            SortBy.ReleaseDateDesc => q => q.OrderByDescending(title => title.ReleaseDate),
+            SortBy.TmdbRatingDesc => q => q.OrderByDescending(title => title.AvgTmdbRating),
+            SortBy.Id => q => q.OrderBy(title => title.Id),
+            _ => q => q.OrderBy(title => title.Id)
+        };
+
+        return orderBy;
     }
 
     private static IQueryable<Title> ApplyFilters(IQueryable<Title> query, FilterRequest filterOptions)
@@ -193,8 +209,8 @@ public class ContentService : IContentService
 
         if (filterOptions.TitleTypes != null)
         {
-            var casted = filterOptions.TitleTypes.Select(tt => (TitleType)tt);
-            query = query.Where(t => casted.Contains(t.ContentType));
+            // var casted = filterOptions.TitleTypes.Select(tt => (TitleType)tt);
+            query = query.Where(t => filterOptions.TitleTypes.Contains((int)t.ContentType));
         }
 
         var rRange = filterOptions.RatingRange;
