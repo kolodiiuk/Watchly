@@ -9,7 +9,7 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<WatchlyDbC
     {
         var optionsBuilder = new DbContextOptionsBuilder<WatchlyDbContext>();
         optionsBuilder.UseNpgsql(
-            "Host=localhost;Port=5432;Database=watchly;Username=nk;Password=G4thgw4GRETG%WEgrdfe45");
+            "Host=localhost;Port=5432;Database=watchly;Username=nk;Password=G4thgw4GRETG%$WEgr,dfe45");
 
         return new WatchlyDbContext(optionsBuilder.Options);
     }

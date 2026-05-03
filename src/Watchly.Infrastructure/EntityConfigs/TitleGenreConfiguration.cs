@@ -22,5 +22,8 @@ internal sealed class TitleGenreConfiguration : IEntityTypeConfiguration<TitleGe
         builder.HasOne(tg => tg.Genre)
             .WithMany(g => g.TitleGenres)
             .HasForeignKey(tg => tg.GenreId);
+
+        builder.HasIndex(tg => new { tg.GenreId, tg.TitleId });
+        builder.HasIndex(tg => new { tg.TitleId, tg.GenreId });
     }
 }

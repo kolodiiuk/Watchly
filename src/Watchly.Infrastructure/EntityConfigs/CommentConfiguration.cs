@@ -28,6 +28,8 @@ internal sealed class CommentConfiguration : IEntityTypeConfiguration<Comment>
             .WithMany(e => e.Comments)
             .HasForeignKey(c => c.EpisodeId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(c => c.TitleId).IsUnique();
+        builder.HasIndex(c => c.EpisodeId).IsUnique();
     }
 }
-

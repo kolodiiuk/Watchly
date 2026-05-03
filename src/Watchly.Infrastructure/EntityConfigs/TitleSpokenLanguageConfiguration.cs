@@ -23,5 +23,8 @@ internal sealed class TitleSpokenLanguageConfiguration : IEntityTypeConfiguratio
             .WithMany(sl => sl.TitleSpokenLanguages)
             .HasForeignKey(tg => tg.SpokenLanguageId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(tsl => new { tsl.SpokenLanguageId, tsl.TitleId });
+        builder.HasIndex(tsl => new { tsl.TitleId, tsl.SpokenLanguageId });
     }
 }

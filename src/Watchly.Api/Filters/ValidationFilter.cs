@@ -11,6 +11,7 @@ public class ValidationFilter : IAsyncActionFilter
         [CatalogValidator.GetTitle] = CatalogValidator.ValidateGetTitle,
         [CatalogValidator.GetEpisode] = CatalogValidator.ValidateGetEpisode,
         [CatalogValidator.Search] = CatalogValidator.ValidateSearch,
+        [CatalogValidator.GetKeywordSuggestions] = CatalogValidator.ValidateGetKeywordSuggestions,
 
         [AuthValidator.SignUp] = AuthValidator.ValidateSignUp,
         [AuthValidator.SignIn] = AuthValidator.ValidateSignIn,

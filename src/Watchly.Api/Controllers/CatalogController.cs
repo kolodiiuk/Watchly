@@ -80,6 +80,59 @@ public sealed class CatalogController : BaseController<CatalogController>
         return res.Value.Any() ? StatusCode(StatusCodes.Status200OK, res.Value) : StatusCode(404);
     }
 
+    [EndpointSummary("Gets keyword suggestions.")]
+    [EndpointDescription("Returns up to 5 keyword suggestions matching the provided term.")]
+    [ProducesResponseType(typeof(IEnumerable<Keyword>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [AllowAnonymous]
+    [ServiceFilter(typeof(ValidationFilter))]
+    [HttpGet("keyword-suggestions")]
+    public async Task<ActionResult<IEnumerable<Keyword>>> GetNextKeywordSuggestionAsync(
+        [FromQuery(Name = "term")] string searchTerm,
+        CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        var res = await _contentService.GetNextKeywordSuggestionAsync(searchTerm, ct);
+        if (res.Failure)
+        {
+            Log(LogLevel.Error, CatalogControllerEventIds.GetKeywordSuggestionsFailed,
+                "Get keyword suggestions for term {term} failed: {error}", searchTerm, res.Error);
+
+            return Problem(
+                title: "Get keyword suggestions failed",
+                detail: res.Error,
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        return res.Value.Any() ? StatusCode(StatusCodes.Status200OK, res.Value) : StatusCode(404);
+    }
+
+    [EndpointSummary("Gets spoken languages.")]
+    [EndpointDescription("Returns all supported spoken languages for filtering.")]
+    [ProducesResponseType(typeof(IEnumerable<SpokenLanguage>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [AllowAnonymous]
+    [HttpGet("spoken-languages")]
+    public async Task<ActionResult<IEnumerable<SpokenLanguage>>> GetSpokenLanguagesAsync(
+        CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        var res = await _contentService.GetSpokenLanguagesAsync(ct);
+        if (res.Failure)
+        {
+            Log(LogLevel.Error, CatalogControllerEventIds.GetSpokenLanguagesFailed,
+                "Get spoken languages failed: {error}", res.Error);
+
+            return Problem(
+                title: "Get spoken languages failed",
+                detail: res.Error,
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        return res.Value.Any() ? StatusCode(StatusCodes.Status200OK, res.Value) : StatusCode(404);
+    }
+
     [EndpointSummary("Gets a specific title.")]
     [EndpointDescription("Retrieves detailed information about a title by its ID for detailed display.")]
     [ProducesResponseType(typeof(TitleInfo), StatusCodes.Status200OK)]
@@ -114,6 +167,7 @@ public sealed class CatalogController : BaseController<CatalogController>
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [AllowAnonymous]
+    [OutputCache(PolicyName = "EpisodeById")]
     [ServiceFilter(typeof(ValidationFilter))]
     [HttpGet("episode/{episodeId:int}")]
     public async Task<ActionResult<EpisodeInfo>> GetEpisodeAsync(int episodeId, CancellationToken ct = default)

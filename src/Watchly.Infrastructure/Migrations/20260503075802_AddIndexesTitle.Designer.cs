@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Watchly.Infrastructure.DbContexts;
@@ -11,9 +12,11 @@ using Watchly.Infrastructure.DbContexts;
 namespace Watchly.Infrastructure.Migrations
 {
     [DbContext(typeof(WatchlyDbContext))]
-    partial class WatchlyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260503075802_AddIndexesTitle")]
+    partial class AddIndexesTitle
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -223,11 +226,9 @@ namespace Watchly.Infrastructure.Migrations
                         .HasName("pk_comments");
 
                     b.HasIndex("EpisodeId")
-                        .IsUnique()
                         .HasDatabaseName("ix_comments_episode_id");
 
                     b.HasIndex("TitleId")
-                        .IsUnique()
                         .HasDatabaseName("ix_comments_title_id");
 
                     b.HasIndex("UserId")

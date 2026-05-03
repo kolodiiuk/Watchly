@@ -21,6 +21,18 @@ public static class IServiceCollectionExtensions
             options.AddPolicy("TitleById",
                 b => b.Expire(TimeSpan.FromMinutes(20))
                         .SetVaryByRouteValue(["titleId"]));
+            options.AddPolicy("EpisodeById",
+                b => b.Expire(TimeSpan.FromMinutes(20))
+                    .SetVaryByRouteValue(["episodeId"]));
+        });
+    }
+
+    public static void RegisterRedisCache(this IServiceCollection services, string connectionString)
+    {
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = connectionString;
+            options.InstanceName = "WathclyC_";
         });
     }
 }

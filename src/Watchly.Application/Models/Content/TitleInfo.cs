@@ -19,8 +19,8 @@ public record TitleInfo(
     string LocalizationLanguages,
     float AvgVote,
     int VoteCount,
-    IEnumerable<ProductionCompany> ProductionCompanies,
-    IEnumerable<Genre> Genres,
+    IEnumerable<string> ProductionCompanies,
+    IEnumerable<string> Genres,
     IEnumerable<SeasonInfo> Seasons,
-    IEnumerable<SpokenLanguage> SpokenLanguages
+    IEnumerable<string> SpokenLanguages
     );
