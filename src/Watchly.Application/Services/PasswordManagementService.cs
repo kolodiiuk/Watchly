@@ -31,45 +31,94 @@ public sealed class PasswordManagementService : LoggingService<PasswordManagemen
         _dbContext = watchlyDbContext;
     }
 
-    public async Task<Result> ChangePasswordAsync(Guid userId, string oldPassword, string newPassword)
+    public async Task<Result> ChangePasswordAsync(
+        Guid userId,
+        string oldPassword,
+        string newPassword,
+        CancellationToken ct)
     {
-        var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
+        try
         {
-            return Result.Fail("User not found");
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user is null)
+            {
+                return Result.Fail("User not found");
+            }
+
+            var res = await _userManager.ChangePasswordAsync(user, oldPassword, newPassword);
+
+            return res.Succeeded switch
+            {
+                false => Result.Fail(string.Join('\n', res.Errors.Select(e => e.Description))),
+                _ => Result.Success()
+            };
         }
-
-        var res = await _userManager.ChangePasswordAsync(user, oldPassword, newPassword);
-
-        return res.Succeeded switch
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            false => Result.Fail(string.Join('\n', res.Errors.Select(e => e.Description))),
-            _ => Result.Success()
-        };
+            throw;
+        }
+        catch (Exception e)
+        {
+            return Result.Fail($"Problem changing password: {e.Message}");
+        }
     }
 
     public async Task<Result> SendPasswordResetConfirmationAsync(string userEmail, CancellationToken ct)
     {
-        var user = await _userManager.FindByEmailAsync(userEmail);
-        if (user is null)
+        ct.ThrowIfCancellationRequested();
+        try
         {
-            return Result.Fail("User is not found");
+            var user = await _userManager.FindByEmailAsync(userEmail);
+            if (user is null)
+            {
+                return Result.Fail("User is not found");
+            }
+
+            var body = await GenBodyPasswordResetAsync(user.UserName, user.Id, ct);
+            var message = new EmailMessage
+            {
+                To = userEmail, IsHtml = true, Subject = "Password Reset", Body = body
+            };
+            var res = await _emailService.SendAsync(message, ct);
+
+            return Result.Success();
         }
-
-        var body = await GenBodyPasswordResetAsync(user.UserName, user.Id, ct);
-        var message = new EmailMessage
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            To = userEmail, IsHtml = true, Subject = "Password Reset", Body = body
-        };
-        var res = await _emailService.SendAsync(message, ct);
+            throw;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
 
-        return Result.Success();
+    public async Task<Result<bool>> ValidateResetPasswordRequestAsync(string token, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        try
+        {
+            throw new NotImplementedException();
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return Result<bool>.Fail($"Problem validating reset password request: {e.Message}");
+        }
     }
 
     private async Task<string> GenBodyPasswordResetAsync(string userName, Guid userId, CancellationToken ct)
     {
-        //todo: rm hardcoding
         var token = await CreateTokenAsync(userId, ct);
+        if (token == null)
+        {
+            return null;
+        }
+
         var url = $"http://localhost:5171/api/users/reset-password?token={token}";
 
         return $"""
@@ -85,6 +134,7 @@ public sealed class PasswordManagementService : LoggingService<PasswordManagemen
 
     private async Task<string> CreateTokenAsync(Guid userId, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
         var tokenValue = GenerateToken();
         var passwordResetToken = new PasswordResetToken
         {
@@ -100,13 +150,17 @@ public sealed class PasswordManagementService : LoggingService<PasswordManagemen
             {
                 return null;
             }
+
+            return tokenValue;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception e)
         {
             return null;
         }
-
-        return tokenValue;
     }
 
     private static string GenerateToken()
@@ -126,10 +180,5 @@ public sealed class PasswordManagementService : LoggingService<PasswordManagemen
         var hashBytes = SHA256.HashData(inputBytes);
 
         return Convert.ToHexString(hashBytes).ToLower();
-    }
-
-    public async Task<Result<bool>> ValidateResetPasswordRequestAsync(string token, CancellationToken ct)
-    {
-        throw new NotImplementedException();
     }
 }

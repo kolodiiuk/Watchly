@@ -8,5 +8,5 @@ public interface IPasswordManagementService
 
     Task<Result> SendPasswordResetConfirmationAsync(string userEmail, CancellationToken ct);
 
-    Task<Result> ChangePasswordAsync(Guid parsedUserId, string reqOldPassword, string reqNewPassword);
+    Task<Result> ChangePasswordAsync(Guid parsedUserId, string reqOldPassword, string reqNewPassword, CancellationToken ct);
 }

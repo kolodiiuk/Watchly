@@ -146,7 +146,7 @@ public sealed class UserProfileController : BaseController<UserProfileController
         }
 
         var res = await _passwordManagementService.ChangePasswordAsync(
-            parsedUserId, req.OldPassword, req.NewPassword);
+            parsedUserId, req.OldPassword, req.NewPassword, ct);
 
         if (res.Failure)
         {
@@ -264,5 +264,34 @@ public sealed class UserProfileController : BaseController<UserProfileController
         }
 
         return StatusCode(StatusCodes.Status204NoContent);
+    }
+
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [HttpPatch("picture")]
+    [EndpointSummary("Validates a request for password reset from email.")]
+    [EndpointDescription("Accepts token, validates it.")]
+    public async Task<IActionResult> UpdateProfilePictureAsync(IFormFile file, CancellationToken ct)
+    {
+        return StatusCode(StatusCodes.Status501NotImplemented);
+        throw new NotImplementedException();
+        /*
+        if (file == null || file.Length == 0)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, title: "No file uploaded.");
+        }
+
+        ct.ThrowIfCancellationRequested();
+        var res = await _userManagementService.UpdateProfilePictureAsync(file.OpenReadStream(), UserId, ct);
+        if (res.Failure)
+        {
+            return Problem(
+                title: "Problem updating profile picture",
+                detail: res.Error,
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        return NoContent();
+        */
     }
 }
