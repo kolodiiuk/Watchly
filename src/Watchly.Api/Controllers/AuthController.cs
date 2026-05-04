@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Watchly.Api.Dto.Auth;
+using Watchly.Api.Filters;
 using Watchly.Api.Logging;
 using Watchly.Application.Interfaces;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Auth;
 
 namespace Watchly.Api.Controllers;
 
@@ -18,34 +19,17 @@ public sealed class AuthController : BaseController<AuthController>
         _authService = authService;
     }
 
-    private string IpAddress =>
-        HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? "unknown";
-
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [HttpPost("sign-up")]
+    [ServiceFilter(typeof(ValidationFilter))]
     [EndpointSummary("Registers a new user account.")]
     [EndpointDescription(
         "Validates the incoming registration payload and creates a user with the provided credentials.")]
     public async Task<IActionResult> SignUpAsync(SignUpRequest signUpRequest, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-
-        Log(LogLevel.Information, AuthControllerEventIds.SignUpAttempt,
-            "Signup attempt for email: {Email}", signUpRequest?.Email);
-
-        if (signUpRequest == null || !signUpRequest.IsValid())
-        {
-            Log(LogLevel.Warning, AuthControllerEventIds.SignUpInvalidNull,
-                "Invalid sign up data: ");
-
-            return Problem(
-                title: "Invalid sign up data",
-                detail: "Request is null or not valid fields",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
         var result = await _authService.SignUpAsync(signUpRequest.Email, signUpRequest.Password);
         if (result.Failure)
         {
@@ -59,9 +43,6 @@ public sealed class AuthController : BaseController<AuthController>
                 statusCode: StatusCodes.Status500InternalServerError);
         }
 
-        Log(LogLevel.Information, AuthControllerEventIds.SignUpSuccess,
-            "Successfully registered user with email: {Email}", signUpRequest.Email);
-
         return StatusCode(StatusCodes.Status201Created);
     }
 
@@ -69,26 +50,12 @@ public sealed class AuthController : BaseController<AuthController>
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [HttpPost("sign-in")]
+    [ServiceFilter(typeof(ValidationFilter))]
     [EndpointSummary("Authenticates a user with email and password.")]
     [EndpointDescription("Validates user credentials and returns access plus tokens.")]
     public async Task<ActionResult<SignInResponse>> SignInAsync(SignInRequest request, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-
-        Log(LogLevel.Information, AuthControllerEventIds.SignInAttempt,
-            "Sign in attempt for email: {Email}", request?.Email);
-
-        if (request == null || !request.IsValid())
-        {
-            Log(LogLevel.Warning, AuthControllerEventIds.SignInInvalidNull,
-                "Invalid sign in data: request is null");
-
-            return Problem(
-                title: "Invalid sign in user data",
-                detail: "Request is null or not valid fields",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
         var response = await _authService.SignInAsync(request.Email, request.Password, IpAddress, ct);
         if (response.Failure)
         {
@@ -101,9 +68,6 @@ public sealed class AuthController : BaseController<AuthController>
                 statusCode: StatusCodes.Status500InternalServerError);
         }
 
-        Log(LogLevel.Information, AuthControllerEventIds.SignInSuccess,
-            "Successfully signed in user: {Email}", request.Email);
-
         return StatusCode(StatusCodes.Status200OK, response.Value);
     }
 
@@ -112,6 +76,7 @@ public sealed class AuthController : BaseController<AuthController>
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [HttpPost("refresh")]
+    [ServiceFilter(typeof(ValidationFilter))]
     [EndpointSummary("Refreshes an access token using a refresh token.")]
     [EndpointDescription(
         "Validates the supplied refresh token, regenerates JWT credentials, and returns updated token metadata.")]
@@ -119,19 +84,6 @@ public sealed class AuthController : BaseController<AuthController>
         CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-
-        Log(LogLevel.Information, AuthControllerEventIds.TokenRefreshAttempt, "Token refresh attempt");
-
-        if (request == null || string.IsNullOrEmpty(request.RefreshToken))
-        {
-            Log(LogLevel.Warning, AuthControllerEventIds.TokenRefreshEmpty, "Refresh token is empty");
-
-            return Problem(
-                title: "Invalid refresh token",
-                detail: "Request is null or not valid fields",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
         var res = await _authService.RefreshTokenAsync(request.RefreshToken, IpAddress, ct);
         if (res.Failure)
         {
@@ -144,9 +96,6 @@ public sealed class AuthController : BaseController<AuthController>
                 statusCode: StatusCodes.Status500InternalServerError);
         }
 
-        Log(LogLevel.Information, AuthControllerEventIds.TokenRefreshedSuccess,
-            "Successfully refreshed token for user ID: {UserId}", res.Value.Id);
-
         return StatusCode(StatusCodes.Status200OK, res.Value);
     }
 
@@ -154,25 +103,12 @@ public sealed class AuthController : BaseController<AuthController>
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [HttpPost("sign-out")]
+    [ServiceFilter(typeof(ValidationFilter))]
     [EndpointSummary("Signs out a user by revoking the refresh token.")]
     [EndpointDescription("Ensures a refresh token is provided and invalidates it to end the user session.")]
     public async Task<IActionResult> SignOutAsync([FromBody] SignOutDto request, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-
-        Log(LogLevel.Information, AuthControllerEventIds.SignOutAttempt, "Sign out attempt");
-
-        if (request == null || string.IsNullOrEmpty(request.RefreshToken))
-        {
-            Log(LogLevel.Warning, AuthControllerEventIds.SignOutEmptyToken,
-                "Sign out failed: refresh token is empty");
-
-            return Problem(
-                title: "Refresh token validation failure",
-                detail: "Request is null or token is null or empty",
-                statusCode: StatusCodes.Status400BadRequest);
-        }
-
         var result = await _authService.SignOutAsync(request.RefreshToken, IpAddress, ct);
         if (result.Failure)
         {
@@ -184,9 +120,6 @@ public sealed class AuthController : BaseController<AuthController>
                 detail: result.Error,
                 statusCode: StatusCodes.Status500InternalServerError);
         }
-
-        Log(LogLevel.Information, AuthControllerEventIds.SignOutSuccess,
-            "Successfully signed out user");
 
         return StatusCode(StatusCodes.Status200OK, new { message = "Signed out successfully" });
     }

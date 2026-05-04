@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Watchly.Api.Dto.Vote;
-
 namespace Watchly.Api.Controllers;
 
 [ApiController]

@@ -1,4 +1,4 @@
-namespace Watchly.Application.Models;
+namespace Watchly.Application.Models.Stats;
 
 public sealed class MovieStatsResponse
 {

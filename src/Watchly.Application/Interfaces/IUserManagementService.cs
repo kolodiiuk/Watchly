@@ -1,4 +1,4 @@
-using Watchly.Application.Models;
+using Watchly.Application.Models.UserProfile;
 using Watchly.Domain.Utils;
 
 namespace Watchly.Application.Interfaces;

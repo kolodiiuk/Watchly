@@ -13,6 +13,7 @@ internal sealed class KeywordTitleConfiguration : IEntityTypeConfiguration<Keywo
         builder.Property(kt => kt.Id);
         builder.Property(kt => kt.KeywordId);
         builder.Property(kt => kt.TitleId);
+        builder.Property(kt => kt.IsTvShow).IsRequired();
 
         builder.HasOne(tg => tg.Title)
             .WithMany(t => t.KeywordTitles)

@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TimeZoneConverter;
 using Watchly.Application.Interfaces;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Auth;
+using Watchly.Application.Models.UserProfile;
 using Watchly.Domain.Entities;
 using Watchly.Domain.Utils;
 using Watchly.Infrastructure.Interfaces;
@@ -11,6 +13,8 @@ namespace Watchly.Application.Services;
 
 public class AuthService : LoggingService<AuthService>, IAuthService
 {
+    private static readonly TimeZoneInfo Tz = TZConvert.GetTimeZoneInfo("Europe/Kyiv");
+
     private readonly IJwtService _jwtService;
 
     private readonly IRefreshTokenRepository _refreshTokenRepository;
@@ -46,6 +50,15 @@ public class AuthService : LoggingService<AuthService>, IAuthService
                     result.Errors.Select(e => e.Description))}");
             }
 
+            var roleRes = await _userManager.AddToRoleAsync(user, "User");
+            if (!roleRes.Succeeded)
+            {
+                var codes = roleRes.Errors.Select(err => err.Code);
+                
+                return Result.Fail(
+                    $"Failed to add to role: {string.Join(", ", codes)}");
+            }
+
             return Result.Success();
         }
         catch (Exception e)
@@ -69,8 +82,10 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             return Result<SignInResponse>.Fail(tokensRes.Error);
         }
 
+        var userRoles = await _userManager.GetRolesAsync(validationResult.Value);
+        
         var response = CreateSignInResponse(tokensRes.Value, email,
-            validationResult.Value.UserName, validationResult.Value.Id);
+            validationResult.Value.UserName, validationResult.Value.Id, userRoles);
 
         return Result<SignInResponse>.Success(response);
     }
@@ -107,7 +122,9 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             return Result<RefreshTokenResponse>.Fail("Token revoked");
         }
 
-        if (storedRefreshToken.Expires <= DateTime.UtcNow)
+        var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Tz);
+        var expiresLocalTime = TimeZoneInfo.ConvertTimeFromUtc(storedRefreshToken.Expires, Tz);
+        if (expiresLocalTime <= localTime)
         {
             // automatic revocation by expiration date
             return Result<RefreshTokenResponse>.Fail("Token expired");
@@ -135,12 +152,16 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             return Result<RefreshTokenResponse>.Fail(addTokenRes.Error);
         }
 
+        var roles = await _userManager.GetRolesAsync(user);
+        var role = roles.FirstOrDefault();
+
         return Result<RefreshTokenResponse>.Success(new RefreshTokenResponse
         {
             Token = newToken,
             RefreshToken = newRefreshToken,
             Id = storedRefreshToken.User.Id,
             Email = storedRefreshToken.User.Email,
+            NormalizedRoleName = role ?? ""
         });
     }
 
@@ -225,9 +246,10 @@ public class AuthService : LoggingService<AuthService>, IAuthService
     }
 
     private SignInResponse CreateSignInResponse(
-        TokensResponse tokens, string email, string userName, Guid userId)
+        TokensResponse tokens, string email, string userName, Guid userId, IList<string> userRoles)
     {
-        var tokenExpiration = DateTime.UtcNow.AddMinutes(
+        var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Tz);
+        var tokenExpiration = localTime.AddMinutes(
             Convert.ToDouble(_jwtOptions.TokenExpirationMinutes));
 
         return new SignInResponse
@@ -239,7 +261,8 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             {
                 Id = userId,
                 Email = email,
-                UserName = userName
+                UserName = userName,
+                UserRoles = userRoles
             }
         };
     }

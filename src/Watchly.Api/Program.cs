@@ -9,9 +9,11 @@ using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
+using Watchly.Api.Extensions;
+using Watchly.Api.Filters;
 using Watchly.Api.Middleware;
 using Watchly.Application.Extensions;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Auth;
 using Watchly.Domain.Entities;
 using Watchly.Infrastructure.DbContexts;
 using Watchly.Infrastructure.Extensions;
@@ -80,8 +82,12 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.RegisterOutputCache(builder.Configuration.GetConnectionString("Redis"));
+builder.Services.AddScoped<ValidationFilter>();
 builder.Services.AddServices();
 builder.Services.AddRepositories();
+builder.Services.RegisterCloudinary(builder.Configuration["Cloudinary:Cloud"],
+    builder.Configuration["Cloudinary:ApiKey"], builder.Configuration["Cloudinary:ApiSecret"]);
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
@@ -97,6 +103,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
         options.Password.RequiredLength = 8;
         options.User.RequireUniqueEmail = true;
     })
+    .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<WatchlyDbContext>()
     .AddDefaultTokenProviders();
 
@@ -155,7 +162,6 @@ builder.Services.AddAuthentication(options =>
         };
     });
 
-builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -200,6 +206,7 @@ try
     app.UseMiddleware<ExceptionHandlerMiddleware>();
     app.UseRouting();
     app.UseCors("AllowLocalhost5173");
+    app.UseOutputCache();
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();

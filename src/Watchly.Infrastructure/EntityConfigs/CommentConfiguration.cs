@@ -8,8 +8,6 @@ internal sealed class CommentConfiguration : IEntityTypeConfiguration<Comment>
 {
     public void Configure(EntityTypeBuilder<Comment> builder)
     {
-        builder.HasKey(c => c.Id);
-
         builder.Property(c => c.Id).IsRequired();
         builder.Property(c => c.TitleId);
         builder.Property(c => c.EpisodeId);

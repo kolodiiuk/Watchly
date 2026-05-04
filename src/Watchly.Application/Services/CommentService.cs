@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Watchly.Application.Interfaces;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Comments;
+using Watchly.Application.Models.UserProfile;
 using Watchly.Domain.Entities;
 using Watchly.Domain.Utils;
 using Watchly.Infrastructure.DbContexts;
@@ -99,6 +100,11 @@ public sealed class CommentService : ICommentService
             }
 
             var comment = await _dbContext.Comments.FirstOrDefaultAsync(c => c.Id == commentId, ct);
+            if (comment is null)
+            {
+                return Result.Fail("comment is not found");
+            }
+
             if (comment.UserId != userId)
             {
                 return Result.Fail("user doesn't own comment");
@@ -137,6 +143,11 @@ public sealed class CommentService : ICommentService
             }
 
             var comment = await _dbContext.Comments.FirstOrDefaultAsync(c => c.Id == commentId, ct);
+            if (comment is null)
+            {
+                return Result.Fail("comment is not found");
+            }
+
             if (comment.UserId != userId)
             {
                 return Result.Fail("user doesn't own comment");
@@ -206,4 +217,3 @@ public sealed class CommentService : ICommentService
         return comments;
     }
 }
-

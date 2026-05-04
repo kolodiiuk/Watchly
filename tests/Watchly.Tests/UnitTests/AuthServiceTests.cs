@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Watchly.Application.Interfaces;
-using Watchly.Application.Models;
+using Watchly.Application.Models.Auth;
 using Watchly.Application.Services;
 using Watchly.Domain.Entities;
 using Watchly.Domain.Utils;
@@ -55,8 +55,6 @@ public class AuthServiceTests
         );
     }
 
-    // ─── SignUpAsync ─────────────────────────────────────────────────────────────
-
     [Fact]
     public async Task SignUpAsync_ShouldReturnSuccess_WhenRegistrationIsSuccessful()
     {
@@ -66,6 +64,10 @@ public class AuthServiceTests
 
         _userManagerMock
             .Setup(x => x.CreateAsync(It.Is<User>(u => u.Email == email), password))
+            .ReturnsAsync(IdentityResult.Success);
+
+        _userManagerMock
+            .Setup(x => x.AddToRoleAsync(It.Is<User>(u => u.Email == email), "User"))
             .ReturnsAsync(IdentityResult.Success);
 
         // Act
@@ -116,8 +118,6 @@ public class AuthServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("DB unavailable");
     }
-
-    // ─── SignInAsync (exercises ValidateUserCredentialsAsync + GenerateTokensAsync) ──
 
     [Fact]
     public async Task SignInAsync_ShouldReturnSuccess_WhenCredentialsAreValidAndTokensGenerated()
@@ -460,8 +460,6 @@ public class AuthServiceTests
         await Assert.ThrowsAsync<OperationCanceledException>(() =>
             _sut.RefreshTokenAsync("some_token", IpAddress, cts.Token));
     }
-
-    // ─── SignOutAsync ────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task SignOutAsync_ShouldReturnFail_WhenTokenIsEmpty()

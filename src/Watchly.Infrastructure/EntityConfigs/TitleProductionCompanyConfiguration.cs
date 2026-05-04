@@ -12,6 +12,7 @@ internal sealed class TitleProductionCompanyConfiguration : IEntityTypeConfigura
 
         builder.Property(tpc => tpc.Id);
         builder.Property(tpc => tpc.TitleId);
+        builder.Property(tpc => tpc.IsTvShow).IsRequired();
         builder.Property(tpc => tpc.ProductionCompanyId);
 
         builder.HasOne(tpc => tpc.Title)

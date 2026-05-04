@@ -9,9 +9,11 @@ public static class ServiceCollectionExtensions
     public static void AddServices(this IServiceCollection serviceCollection)
     {
         serviceCollection.AddScoped<IAuthService, AuthService>();
-        serviceCollection.AddSingleton<IJwtService, JwtService>();
-        serviceCollection.AddScoped<IUserManagementService, UserManagementService>();
-        serviceCollection.AddScoped<IPasswordManagementService, PasswordManagementService>();
         serviceCollection.AddScoped<ICommentService, CommentService>();
+        serviceCollection.AddScoped<IContentService, ContentService>();
+        serviceCollection.AddSingleton<IJwtService, JwtService>();
+        serviceCollection.AddScoped<IPasswordManagementService, PasswordManagementService>();
+        serviceCollection.AddScoped<IVoteService, VoteService>();
+        serviceCollection.AddScoped<IUserManagementService, UserManagementService>();
     }
 }

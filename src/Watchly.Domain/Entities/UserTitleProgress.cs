@@ -1,3 +1,5 @@
+using Watchly.Domain.Enums;
+
 namespace Watchly.Domain.Entities;
 
 public class UserTitleProgress

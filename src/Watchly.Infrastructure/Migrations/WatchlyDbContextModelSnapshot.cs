@@ -334,6 +334,10 @@ namespace Watchly.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("IsTvShow")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_tv_show");
+
                     b.Property<int>("KeywordId")
                         .HasColumnType("integer")
                         .HasColumnName("keyword_id");
@@ -546,15 +550,14 @@ namespace Watchly.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("director");
 
-                    b.Property<bool>("IsAdult")
-                        .IsRequired()
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_adult");
-
                     b.Property<string>("HomePage")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("home_page");
+
+                    b.Property<bool>("IsAdult")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_adult");
 
                     b.Property<string>("LocalizationLanguages")
                         .HasMaxLength(1500)
@@ -599,6 +602,10 @@ namespace Watchly.Infrastructure.Migrations
                         .HasName("pk_titles");
 
                     b.ToTable("titles");
+
+                    b.HasDiscriminator<int>("ContentType").HasValue(1);
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("Watchly.Domain.Entities.TitleGenre", b =>
@@ -613,6 +620,10 @@ namespace Watchly.Infrastructure.Migrations
                     b.Property<int>("GenreId")
                         .HasColumnType("integer")
                         .HasColumnName("genre_id");
+
+                    b.Property<bool>("IsTvShow")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_tv_show");
 
                     b.Property<int>("TitleId")
                         .HasColumnType("integer")
@@ -638,6 +649,10 @@ namespace Watchly.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsTvShow")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_tv_show");
 
                     b.Property<int>("ProductionCompanyId")
                         .HasColumnType("integer")
@@ -667,6 +682,10 @@ namespace Watchly.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsTvShow")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_tv_show");
 
                     b.Property<int>("SpokenLanguageId")
                         .HasColumnType("integer")
@@ -950,6 +969,69 @@ namespace Watchly.Infrastructure.Migrations
                         .HasDatabaseName("ix_watch_list_items_watch_list_id");
 
                     b.ToTable("watch_list_items");
+                });
+
+            modelBuilder.Entity("Watchly.Domain.Entities.TvShow", b =>
+                {
+                    b.HasBaseType("Watchly.Domain.Entities.Title");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(3000)
+                        .HasColumnType("character varying(3000)")
+                        .HasColumnName("created_by");
+
+                    b.Property<int?>("EpisodeRunTime")
+                        .HasColumnType("integer")
+                        .HasColumnName("episode_run_time");
+
+                    b.Property<DateTime?>("FirstAirDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("first_air_date");
+
+                    b.Property<bool>("InProduction")
+                        .HasColumnType("boolean")
+                        .HasColumnName("in_production");
+
+                    b.Property<DateTime?>("LastAirDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_air_date");
+
+                    b.Property<int>("NumberOfEpisodes")
+                        .HasColumnType("integer")
+                        .HasColumnName("number_of_episodes");
+
+                    b.Property<int>("NumberOfSeasons")
+                        .HasColumnType("integer")
+                        .HasColumnName("number_of_seasons");
+
+                    b.Property<string>("OriginalLanguage")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("original_language");
+
+                    b.Property<string>("OriginalName")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("original_name");
+
+                    b.Property<string>("Status")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Type")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("type");
+
+                    b.Property<float?>("VoteAverage")
+                        .HasColumnType("real")
+                        .HasColumnName("vote_average");
+
+                    b.ToTable("titles");
+
+                    b.HasDiscriminator().HasValue(2);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
