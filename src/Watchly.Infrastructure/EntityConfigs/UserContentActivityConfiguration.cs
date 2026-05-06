@@ -16,6 +16,7 @@ public class UserContentActivityConfiguration : IEntityTypeConfiguration<UserCon
         builder.Property(a => a.ActivityType).IsRequired();
         builder.Property(a => a.UserId);
         builder.Property(a => a.WatchedAt).IsRequired();
+        builder.Property(a => a.WatchCount);
 
         builder.HasOne(a => a.User)
             .WithMany(u => u.UserContentActivities)

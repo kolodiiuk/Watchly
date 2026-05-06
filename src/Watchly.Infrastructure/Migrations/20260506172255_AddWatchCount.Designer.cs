@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Watchly.Infrastructure.DbContexts;
@@ -11,9 +12,11 @@ using Watchly.Infrastructure.DbContexts;
 namespace Watchly.Infrastructure.Migrations
 {
     [DbContext(typeof(WatchlyDbContext))]
-    partial class WatchlyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260506172255_AddWatchCount")]
+    partial class AddWatchCount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -223,11 +226,9 @@ namespace Watchly.Infrastructure.Migrations
                         .HasName("pk_comments");
 
                     b.HasIndex("EpisodeId")
-                        .IsUnique()
                         .HasDatabaseName("ix_comments_episode_id");
 
                     b.HasIndex("TitleId")
-                        .IsUnique()
                         .HasDatabaseName("ix_comments_title_id");
 
                     b.HasIndex("UserId")
@@ -324,11 +325,6 @@ namespace Watchly.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_keywords");
 
-                    b.HasIndex("Name");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
-
                     b.ToTable("keywords");
                 });
 
@@ -356,9 +352,11 @@ namespace Watchly.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_keyword_titles");
 
-                    b.HasIndex("KeywordId", "TitleId");
+                    b.HasIndex("KeywordId")
+                        .HasDatabaseName("ix_keyword_titles_keyword_id");
 
-                    b.HasIndex("TitleId", "KeywordId");
+                    b.HasIndex("TitleId")
+                        .HasDatabaseName("ix_keyword_titles_title_id");
 
                     b.ToTable("keyword_titles");
                 });
@@ -637,9 +635,11 @@ namespace Watchly.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_title_genres");
 
-                    b.HasIndex("GenreId", "TitleId");
+                    b.HasIndex("GenreId")
+                        .HasDatabaseName("ix_title_genres_genre_id");
 
-                    b.HasIndex("TitleId", "GenreId");
+                    b.HasIndex("TitleId")
+                        .HasDatabaseName("ix_title_genres_title_id");
 
                     b.ToTable("title_genres");
                 });
@@ -668,9 +668,11 @@ namespace Watchly.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_title_production_companies");
 
-                    b.HasIndex("ProductionCompanyId", "TitleId");
+                    b.HasIndex("ProductionCompanyId")
+                        .HasDatabaseName("ix_title_production_companies_production_company_id");
 
-                    b.HasIndex("TitleId", "ProductionCompanyId");
+                    b.HasIndex("TitleId")
+                        .HasDatabaseName("ix_title_production_companies_title_id");
 
                     b.ToTable("title_production_companies");
                 });
@@ -699,9 +701,11 @@ namespace Watchly.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_title_spoken_languages");
 
-                    b.HasIndex("SpokenLanguageId", "TitleId");
+                    b.HasIndex("SpokenLanguageId")
+                        .HasDatabaseName("ix_title_spoken_languages_spoken_language_id");
 
-                    b.HasIndex("TitleId", "SpokenLanguageId");
+                    b.HasIndex("TitleId")
+                        .HasDatabaseName("ix_title_spoken_languages_title_id");
 
                     b.ToTable("title_spoken_languages");
                 });
