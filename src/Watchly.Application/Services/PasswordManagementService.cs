@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Watchly.Application.Interfaces;
 using Watchly.Domain.Entities;
@@ -13,6 +14,14 @@ namespace Watchly.Application.Services;
 
 public sealed class PasswordManagementService : LoggingService<PasswordManagementService>, IPasswordManagementService
 {
+    private const string PasswordLowercase = "abcdefghijklmnopqrstuvwxyz";
+
+    private const string PasswordUppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    private const string PasswordDigits = "0123456789";
+
+    private const string PasswordSymbols = "!@#$%^&*()-_=+[]{}|;:,.<>?";
+
     private readonly UserManager<User> _userManager;
 
     private readonly IEmailService _emailService;
@@ -99,7 +108,91 @@ public sealed class PasswordManagementService : LoggingService<PasswordManagemen
         ct.ThrowIfCancellationRequested();
         try
         {
-            throw new NotImplementedException();
+            var tokenHash = HashToken(token);
+            var resetToken = await _dbContext.PasswordResetTokens
+                .FirstOrDefaultAsync(t => t.TokenHash == tokenHash, ct);
+            if (resetToken is null)
+            {
+                return Result<bool>.Fail("No token with such hash");
+            }
+
+            if (resetToken.Expires <= DateTime.UtcNow)
+            {
+                return Result<bool>.Fail("Token expired");
+            }
+
+            var user = await _userManager.FindByIdAsync(resetToken.UserId.ToString());
+            if (user is null)
+            {
+                return Result<bool>.Fail("User does not exist");
+            }
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            var newUser = new User
+            {
+                Email = user.Email,
+                NormalizedEmail = user.NormalizedEmail,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = DateTime.UtcNow,
+                UserName = user.UserName,
+                NormalizedUserName = user.NormalizedUserName,
+                AccessFailedCount = user.AccessFailedCount,
+                EmailConfirmed = user.EmailConfirmed,
+                PhoneNumber = user.PhoneNumber,
+                PhoneNumberConfirmed = user.PhoneNumberConfirmed,
+                TwoFactorEnabled = user.TwoFactorEnabled,
+                LockoutEnabled = user.LockoutEnabled,
+                LockoutEnd = user.LockoutEnd,
+                ProfilePictureUrl = user.ProfilePictureUrl,
+                ConcurrencyStamp = Guid.NewGuid().ToString(),
+                SecurityStamp = Guid.NewGuid().ToString(),
+            };
+
+            await using var tx = await _dbContext.Database.BeginTransactionAsync(ct);
+
+            var deleteUserResult = await _userManager.DeleteAsync(user);
+            if (!deleteUserResult.Succeeded)
+            {
+                await tx.RollbackAsync(ct);
+
+                return Result<bool>.Fail(string.Join('\n', deleteUserResult.Errors.Select(e => e.Description)));
+            }
+
+            var password = GenerateTemporaryPassword();
+            var createUserResult = await _userManager.CreateAsync(newUser, password);
+            if (!createUserResult.Succeeded)
+            {
+                await tx.RollbackAsync(ct);
+
+                return Result<bool>.Fail(string.Join('\n', createUserResult.Errors.Select(e => e.Description)));
+            }
+
+            if (currentRoles.Count > 0)
+            {
+                var addRolesResult = await _userManager.AddToRolesAsync(newUser, currentRoles);
+                if (!addRolesResult.Succeeded)
+                {
+                    await tx.RollbackAsync(ct);
+                    return Result<bool>.Fail(string.Join('\n', addRolesResult.Errors.Select(e => e.Description)));
+                }
+            }
+
+            var userTokens = await _dbContext.PasswordResetTokens
+                .Where(t => t.UserId == resetToken.UserId)
+                .ToListAsync(ct);
+            _dbContext.PasswordResetTokens.RemoveRange(userTokens);
+            await _dbContext.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+
+            var body = GenBodyPasswordResetAsync(newUser.UserName!, password, ct);
+            var message = new EmailMessage
+            {
+                To = newUser.Email!, IsHtml = true, Subject = "Password Reset", Body = body
+            };
+
+            await _emailService.SendAsync(message, ct);
+
+            return Result<bool>.Success(true);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -119,7 +212,7 @@ public sealed class PasswordManagementService : LoggingService<PasswordManagemen
             return null;
         }
 
-        var url = $"http://localhost:5171/api/users/reset-password?token={token}";
+        var url = $"http://localhost:5173/users/reset-password?token={token}";
 
         return $"""
                 Hello, {userName}
@@ -129,6 +222,15 @@ public sealed class PasswordManagementService : LoggingService<PasswordManagemen
                 If you didn't request this, please ignore this email.
 
                 Your password won't change until you access the link above and create a new one.
+                """;
+    }
+
+    private string GenBodyPasswordResetAsync(string userName, string password, CancellationToken ct)
+    {
+        return $"""
+                Hello, {userName}
+
+                You've successfully changed password. New password: {password}
                 """;
     }
 
@@ -174,7 +276,36 @@ public sealed class PasswordManagementService : LoggingService<PasswordManagemen
         return tokenValue;
     }
 
-    public static string HashToken(string rawToken)
+    private static string GenerateTemporaryPassword(int length = 15)
+    {
+        if (length < 4)
+        {
+            throw new ArgumentOutOfRangeException(nameof(length), "Password length must be at least 4.");
+        }
+
+        var allChars = PasswordLowercase + PasswordUppercase + PasswordDigits + PasswordSymbols;
+        var passwordChars = new char[length];
+
+        passwordChars[0] = PasswordUppercase[RandomNumberGenerator.GetInt32(PasswordUppercase.Length)];
+        passwordChars[1] = PasswordSymbols[RandomNumberGenerator.GetInt32(PasswordSymbols.Length)];
+        passwordChars[2] = PasswordLowercase[RandomNumberGenerator.GetInt32(PasswordLowercase.Length)];
+        passwordChars[3] = PasswordDigits[RandomNumberGenerator.GetInt32(PasswordDigits.Length)];
+
+        for (var i = 4; i < length; i++)
+        {
+            passwordChars[i] = allChars[RandomNumberGenerator.GetInt32(allChars.Length)];
+        }
+
+        for (var i = passwordChars.Length - 1; i > 0; i--)
+        {
+            var swapIndex = RandomNumberGenerator.GetInt32(i + 1);
+            (passwordChars[i], passwordChars[swapIndex]) = (passwordChars[swapIndex], passwordChars[i]);
+        }
+
+        return new string(passwordChars);
+    }
+
+    private static string HashToken(string rawToken)
     {
         var inputBytes = Encoding.UTF8.GetBytes(rawToken);
         var hashBytes = SHA256.HashData(inputBytes);

@@ -22,7 +22,7 @@ internal class UserProfileValidator
 
     internal static bool ValidateChangePassword(IDictionary<string, object> map)
     {
-        map.TryGetValue("request", out var request);
+        map.TryGetValue("req", out var request);
         var cpRequest = request as ChangePasswordRequest;
 
         return !cpRequest.OldPassword.IsNullOrEmpty()

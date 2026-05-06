@@ -11,6 +11,5 @@ public static class ServiceCollectionExtensions
     {
         serviceCollection.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         serviceCollection.AddScoped<IEmailService, EmailService>();
-        serviceCollection.AddScoped<IImageService, ImageService>();
     }
 }

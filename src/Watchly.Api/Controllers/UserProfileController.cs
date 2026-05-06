@@ -6,7 +6,6 @@ using Watchly.Api.Filters;
 using Watchly.Api.Logging;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models.UserProfile;
-using Watchly.Infrastructure.Interfaces;
 
 namespace Watchly.Api.Controllers;
 
@@ -17,17 +16,14 @@ public sealed class UserProfileController : BaseController<UserProfileController
 {
     private readonly IUserManagementService _userManagementService;
     private readonly IPasswordManagementService _passwordManagementService;
-    private readonly IImageService _imageService;
 
     public UserProfileController(IUserManagementService userManagementService,
         IPasswordManagementService passwordManagementService,
-        IImageService imageService,
         ILogger<UserProfileController> logger)
         : base(logger)
     {
         _userManagementService = userManagementService;
         _passwordManagementService = passwordManagementService;
-        _imageService = imageService;
     }
 
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -152,6 +148,7 @@ public sealed class UserProfileController : BaseController<UserProfileController
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [EndpointSummary("Changes a password of existing user.")]
     [EndpointDescription("Accepts old password, new password from an authorized user.")]
+    [AllowAnonymous]
     [HttpPost("forget-password")]
     [ServiceFilter(typeof(ValidationFilter))]
     public async Task<IActionResult> ForgetPasswordAsync(ForgetPasswordRequest req, CancellationToken ct)
@@ -185,6 +182,7 @@ public sealed class UserProfileController : BaseController<UserProfileController
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [HttpPost("reset-password")]
     [ServiceFilter(typeof(ValidationFilter))]
+    [AllowAnonymous]
     [EndpointSummary("Validates a request for password reset from email.")]
     [EndpointDescription("Accepts token, validates it.")]
     public async Task<IActionResult> ResetPasswordAsync([FromQuery(Name = "token")] string token, CancellationToken ct)

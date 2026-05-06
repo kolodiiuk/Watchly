@@ -1,5 +1,6 @@
 using System.Security.Authentication;
 using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Watchly.Domain.Enums;
@@ -32,7 +33,14 @@ public sealed class EmailService : LoggingService<EmailService>, IEmailService
         using var client = new SmtpClient();
         try
         {
-            await client.ConnectAsync(_options.Host, _options.Port, _options.UseSsl, ct);
+            var secureSocketOptions = _options.Port switch
+            {
+                587 => SecureSocketOptions.StartTls,
+                465 => SecureSocketOptions.SslOnConnect,
+                _ => _options.UseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.None
+            };
+
+            await client.ConnectAsync(_options.Host, _options.Port, secureSocketOptions, ct);
 
             if (!string.IsNullOrWhiteSpace(_options.Username))
             {
@@ -62,7 +70,7 @@ public sealed class EmailService : LoggingService<EmailService>, IEmailService
 
             return new EmailSendResult { Result = res, Error = EmailSendError.SmtpProtocolError };
         }
-        catch (AuthenticationException ex)
+        catch (System.Security.Authentication.AuthenticationException ex)
         {
             Log(LogLevel.Error, EmailServiceEventIds.SendFailAuthenticationError,
                 "SMTP authentication failed for host {Host}",
