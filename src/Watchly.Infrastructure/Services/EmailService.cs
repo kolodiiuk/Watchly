@@ -1,9 +1,9 @@
 using System.Security.Authentication;
 using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Watchly.Domain.Enums;
-using Watchly.Domain.Extensions;
 using Watchly.Domain.Utils;
 using Watchly.Infrastructure.Interfaces;
 using Watchly.Infrastructure.Logging;
@@ -20,7 +20,7 @@ public sealed class EmailService : LoggingService<EmailService>, IEmailService
         _options = options.Value;
     }
 
-    public async Task<ResultV<EmailSendError>> SendAsync(EmailMessage message, CancellationToken ct)
+    public async Task<EmailSendResult> SendAsync(EmailMessage message, CancellationToken ct)
     {
         var mimeMessage = new MimeKit.MimeMessage();
         mimeMessage.From.Add(new MimeKit.MailboxAddress(_options.FromName, _options.FromAddress));
@@ -33,7 +33,14 @@ public sealed class EmailService : LoggingService<EmailService>, IEmailService
         using var client = new SmtpClient();
         try
         {
-            await client.ConnectAsync(_options.Host, _options.Port, _options.UseSsl, ct);
+            var secureSocketOptions = _options.Port switch
+            {
+                587 => SecureSocketOptions.StartTls,
+                465 => SecureSocketOptions.SslOnConnect,
+                _ => _options.UseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.None
+            };
+
+            await client.ConnectAsync(_options.Host, _options.Port, secureSocketOptions, ct);
 
             if (!string.IsNullOrWhiteSpace(_options.Username))
             {
@@ -48,9 +55,10 @@ public sealed class EmailService : LoggingService<EmailService>, IEmailService
                 "SMTP command failed when sending email to {message.To} via {_options.Host}:{_options.Port}",
                 message.To, _options.Host, _options.Port);
 
-            return Result
-                .Fail($"SMTP command failed when sending email to {message.To} via {_options.Host}:{_options.Port}")
-                .WithError(EmailSendError.SmtpCommandError);
+            var res = Result.Fail(
+                $"SMTP command failed when sending email to {message.To} via {_options.Host}:{_options.Port}");
+
+            return new EmailSendResult { Result = res, Error = EmailSendError.SmtpCommandError };
         }
         catch (SmtpProtocolException ex)
         {
@@ -58,15 +66,19 @@ public sealed class EmailService : LoggingService<EmailService>, IEmailService
                 "SMTP protocol error when sending email to {To} via {Host}:{Port}",
                 message.To, _options.Host, _options.Port);
 
-            return Result.Fail("SMTP protocol error while sending email.").WithError(EmailSendError.SmtpProtocolError);
+            var res = Result.Fail("SMTP protocol error while sending email.");
+
+            return new EmailSendResult { Result = res, Error = EmailSendError.SmtpProtocolError };
         }
-        catch (AuthenticationException ex)
+        catch (System.Security.Authentication.AuthenticationException ex)
         {
             Log(LogLevel.Error, EmailServiceEventIds.SendFailAuthenticationError,
                 "SMTP authentication failed for host {Host}",
                 _options.Host);
 
-            return Result.Fail("SMTP authentication failed.").WithError(EmailSendError.AuthenticationError);
+            var res = Result.Fail("SMTP authentication failed.");
+
+            return new EmailSendResult { Result = res, Error = EmailSendError.AuthenticationError };
         }
         catch (IOException ex)
         {
@@ -74,7 +86,9 @@ public sealed class EmailService : LoggingService<EmailService>, IEmailService
                 "I/O error while sending email to {To}",
                 message.To);
 
-            return Result.Fail("I/O error while sending email.").WithError(EmailSendError.IOError);
+            var res = Result.Fail("I/O error while sending email.");
+
+            return new EmailSendResult { Result = res, Error = EmailSendError.IOError };
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -85,7 +99,9 @@ public sealed class EmailService : LoggingService<EmailService>, IEmailService
             Log(LogLevel.Error, EmailServiceEventIds.SendFailUnexpectedError,
                 "Unexpected error while sending email to {To}", message.To);
 
-            return Result.Fail("Unexpected error while sending email.").WithError(EmailSendError.UnexpectedError);
+            var res = Result.Fail("Unexpected error while sending email.");
+
+            return new EmailSendResult { Result = res, Error = EmailSendError.UnexpectedError };
         }
         finally
         {
@@ -103,6 +119,6 @@ public sealed class EmailService : LoggingService<EmailService>, IEmailService
             }
         }
 
-        return Result.Success().WithError(EmailSendError.Success);
+        return new EmailSendResult { Result = Result.Success() };
     }
 }

@@ -9,5 +9,5 @@ public interface IUserManagementService
 
     Task<Result<UserInfo>> GetUserAsync(Guid userId);
 
-    Task<Result> AddImageAsync(Guid userId, string absoluteUri);
+    Task<Result> UpdateProfilePictureAsync(Stream stream, Guid userId, CancellationToken ct = default);
 }
