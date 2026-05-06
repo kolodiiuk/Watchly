@@ -6,9 +6,16 @@ namespace Watchly.Application.Interfaces;
 
 public interface IContentService
 {
-    Task<Result<Title>> GetTitleByIdAsync(int titleId, CancellationToken ct);
+    Task<Result<IEnumerable<Keyword>>> GetNextKeywordSuggestionAsync(string searchTerm, CancellationToken ct = default);
 
-    Task<Result<IEnumerable<TitleShortInfo>>> SearchTitlesAsync(string searchTerm, int pageSize, int page, CancellationToken ct);
+    Task<Result<IEnumerable<SpokenLanguage>>> GetSpokenLanguagesAsync(CancellationToken ct = default);
+
+    Task<Result<TitleInfo>> GetTitleByIdAsync(int titleId, CancellationToken ct);
+
+    Task<Result<EpisodeInfo>> GetEpisodeByIdAsync(int episodeId, CancellationToken ct);
+
+    Task<Result<IEnumerable<TitleShortInfo>>> SearchTitlesAsync(
+        string searchTerm, int pageSize, int page, CancellationToken ct);
     
     Task<Result<IEnumerable<TitleShortInfo>>> FilterTitlesAsync(
         FilterRequest filterOptions, CancellationToken ct);

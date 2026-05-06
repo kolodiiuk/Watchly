@@ -16,5 +16,11 @@ internal sealed class KeywordConfiguration : IEntityTypeConfiguration<Keyword>
         b.HasMany(k => k.KeywordTitles)
             .WithOne(kt => kt.Keyword)
             .OnDelete(DeleteBehavior.Cascade);
+
+        b.HasIndex(k => k.Name)
+            .HasOperators("varchar_pattern_ops");
+        b.HasIndex(k => k.Name)
+            .HasMethod("gin")
+            .HasOperators("gin_trgm_ops");
     }
 }

@@ -22,5 +22,8 @@ internal sealed class KeywordTitleConfiguration : IEntityTypeConfiguration<Keywo
         builder.HasOne(tg => tg.Keyword)
             .WithMany(k => k.KeywordTitles)
             .HasForeignKey(kt => kt.KeywordId);
+
+        builder.HasIndex(kt => new { kt.KeywordId, kt.TitleId });
+        builder.HasIndex(kt => new { kt.TitleId, kt.KeywordId });
     }
 }

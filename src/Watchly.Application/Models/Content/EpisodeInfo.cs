@@ -1,4 +1,13 @@
 ﻿namespace Watchly.Application.Models.Content;
 
-// todo: add all the props
-public record EpisodeInfo(int TitleId, int SeasonId, int EpisodeId);
+public record EpisodeInfo(
+    int EpisodeId,
+    int SeasonId,
+    int OrdinalNumber,
+    int Runtime,
+    string Name,
+    string PosterUrl,
+    SeasonShortInfo Season,
+    float AvgVote,
+    int VoteCount
+    );  

@@ -22,5 +22,8 @@ internal sealed class TitleProductionCompanyConfiguration : IEntityTypeConfigura
         builder.HasOne(tpc => tpc.ProductionCompany)
             .WithMany(pc => pc.TitleProductionCompanies)
             .HasForeignKey(tpc => tpc.ProductionCompanyId);
+
+        builder.HasIndex(tpc => new { tpc.ProductionCompanyId, tpc.TitleId });
+        builder.HasIndex(tpc => new { tpc.TitleId, tpc.ProductionCompanyId });
     }
 }

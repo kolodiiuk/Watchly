@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models.Content;
 using Watchly.Domain.Entities;
-using Watchly.Domain.Enums;
 using Watchly.Domain.Utils;
 using Watchly.Infrastructure.DbContexts;
 
@@ -11,21 +12,176 @@ namespace Watchly.Application.Services;
 public class ContentService : IContentService
 {
     private readonly WatchlyDbContext _dbContext;
+    private readonly IDistributedCache _cache;
 
-    public ContentService(WatchlyDbContext dbContext)
+    private static readonly DistributedCacheEntryOptions Options = new()
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
+        SlidingExpiration = TimeSpan.FromMinutes(2)
+    };
+
+    public ContentService(WatchlyDbContext dbContext, IDistributedCache cache)
     {
         _dbContext = dbContext;
+        _cache = cache;
     }
 
-    public Task<Result<Title>> GetTitleByIdAsync(int titleId, CancellationToken ct)
+    public async Task<Result<IEnumerable<SpokenLanguage>>> GetSpokenLanguagesAsync(CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        ct.ThrowIfCancellationRequested();
+
+        try
+        {
+            var slJson = await _cache.GetStringAsync("sl", ct);
+            if (slJson == null)
+            {
+                var sl = await GetSpokenLanguagesDbAsync(ct);
+                var retrievedJson = JsonSerializer.Serialize(sl);
+                await _cache.SetStringAsync("sl", retrievedJson, Options, ct);
+
+                return Result<IEnumerable<SpokenLanguage>>.Success(sl);
+            }
+
+            var res = JsonSerializer.Deserialize<IEnumerable<SpokenLanguage>>(slJson);
+
+            return Result<IEnumerable<SpokenLanguage>>.Success(res);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return Result<IEnumerable<SpokenLanguage>>.Fail(e.Message);
+        }
+    }
+
+    public async Task<Result<IEnumerable<Keyword>>> GetNextKeywordSuggestionAsync(
+        string searchTerm,
+        CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        try
+        {
+            var res = await _dbContext.Keywords
+                .Where(keyword => EF.Functions.ILike(keyword.Name, $"{searchTerm}%"))
+                .Take(5)
+                .ToListAsync(ct);
+
+            return Result<IEnumerable<Keyword>>.Success(res);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return Result<IEnumerable<Keyword>>.Fail(e.Message);
+        }
+    }
+
+    public async Task<Result<TitleInfo>> GetTitleByIdAsync(int titleId, CancellationToken ct)
+    {
+        try
+        {
+            var query =
+                from t in _dbContext.Titles
+                where t.Id == titleId
+                select new TitleInfo(
+                    t.Id,
+                    t.ReleaseDate,
+                    t.Runtime,
+                    t.ContentType,
+                    t.AvgTmdbRating,
+                    t.IsAdult,
+                    t.Name,
+                    t.Overview,
+                    t.PosterUrl,
+                    t.Tagline,
+                    t.Director,
+                    t.Actors,
+                    t.LocalizationLanguages,
+                    t.Votes.Any() ? (float)t.Votes.Average(v => v.Value) : 0,
+                    0,
+                    t.TitleProductionCompanies.Select(pc => pc.ProductionCompany.Name).ToList(),
+                    t.TitleGenres.Select(g => g.Genre.Name).ToList(),
+                    t.Seasons.Select(s => new SeasonInfo(
+                        s.Id,
+                        s.OrdinalNumber,
+                        s.Name,
+                        s.TitleId,
+                        s.Title.Name,
+                        s.Episodes.Select(e => new EpisodeShortInfo(
+                            e.Id,
+                            e.Runtime,
+                            e.Name,
+                            e.Votes.Any() ? (float)e.Votes.Average(v => v.Value) : 0
+                        )).ToList()
+                    )).ToList(),
+                    t.TitleSpokenLanguages.Select(sl => sl.SpokenLanguage.Name).ToList()
+                );
+
+            TitleInfo result = await query.FirstOrDefaultAsync(ct);
+            return result is null
+                ? Result<TitleInfo>.Fail($"Title with id {titleId} was not found.")
+                : Result<TitleInfo>.Success(result);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return Result<TitleInfo>.Fail(e.Message);
+        }
+    }
+
+    public async Task<Result<EpisodeInfo>> GetEpisodeByIdAsync(int episodeId, CancellationToken ct)
+    {
+        try
+        {
+            var query =
+                from e in _dbContext.Episodes
+                where e.Id == episodeId
+                select new EpisodeInfo(
+                    e.Id,
+                    e.SeasonId,
+                    e.OrdinalNumber,
+                    e.Runtime,
+                    e.Name,
+                    e.PosterUrl,
+                    e.Season != null
+                        ? new SeasonShortInfo(
+                            e.Season.Id,
+                            e.Season.OrdinalNumber,
+                            e.Season.Name,
+                            e.Season.TitleId,
+                            e.Season.Title.Name
+                        )
+                        : null,
+                    e.Votes.Any() ? (float)e.Votes.Average(v => v.Value) : 0,
+                    e.Votes.Count()
+                );
+
+            EpisodeInfo result = await query.FirstOrDefaultAsync(ct);
+            return result is null
+                ? Result<EpisodeInfo>.Fail($"Episode with id {episodeId} was not found.")
+                : Result<EpisodeInfo>.Success(result);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return Result<EpisodeInfo>.Fail(e.Message);
+        }
     }
 
     public async Task<Result<IEnumerable<TitleShortInfo>>> SearchTitlesAsync(
-        string searchTerm, 
-        int pageSize, 
-        int page, 
+        string searchTerm,
+        int pageSize,
+        int page,
         CancellationToken ct = default)
     {
         var pattern = $"%{searchTerm}%";
@@ -57,9 +213,10 @@ public class ContentService : IContentService
         try
         {
             IQueryable<Title> query = _dbContext.Titles;
+            var orderBy = BuildOrderBy(filterOptions.SortBy);
+            query = orderBy(query);
             query = ApplyFilters(query, filterOptions);
             var tsi = query
-                .OrderBy(t => t.Id)
                 .Skip((filterOptions.Page - 1) * filterOptions.Size)
                 .Take(filterOptions.Size)
                 .Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating))
@@ -78,6 +235,21 @@ public class ContentService : IContentService
         }
     }
 
+    private static Func<IQueryable<Title>, IOrderedQueryable<Title>> BuildOrderBy(SortBy sortBy)
+    {
+        Func<IQueryable<Title>, IOrderedQueryable<Title>> orderBy = sortBy switch
+        {
+            SortBy.ReleaseDateAsc => q => q.OrderBy(title => title.ReleaseDate),
+            SortBy.TmdbRatingAsc => q => q.OrderBy(title => title.AvgTmdbRating),
+            SortBy.ReleaseDateDesc => q => q.OrderByDescending(title => title.ReleaseDate),
+            SortBy.TmdbRatingDesc => q => q.OrderByDescending(title => title.AvgTmdbRating),
+            SortBy.Id => q => q.OrderBy(title => title.Id),
+            _ => q => q.OrderBy(title => title.Id)
+        };
+
+        return orderBy;
+    }
+
     private static IQueryable<Title> ApplyFilters(IQueryable<Title> query, FilterRequest filterOptions)
     {
         if (filterOptions.Genres?.Any() == true)
@@ -92,14 +264,13 @@ public class ContentService : IContentService
 
         if (filterOptions.SpokenLanguages?.Any() == true)
         {
-            query = query.Where(t => t.TitleSpokenLanguages.Any(
-                tsl => filterOptions.SpokenLanguages.Contains(tsl.SpokenLanguageId)));
+            query = query.Where(t =>
+                t.TitleSpokenLanguages.Any(tsl => filterOptions.SpokenLanguages.Contains(tsl.SpokenLanguageId)));
         }
 
         if (filterOptions.TitleTypes != null)
         {
-            var casted = filterOptions.TitleTypes.Select(tt => (TitleType)tt);
-            query = query.Where(t => casted.Contains(t.ContentType));
+            query = query.Where(t => filterOptions.TitleTypes.Contains((int)t.ContentType));
         }
 
         var rRange = filterOptions.RatingRange;
@@ -115,15 +286,22 @@ public class ContentService : IContentService
         var yRange = filterOptions.YearsRange;
         if (yRange.End != 0)
         {
-            query = query.Where(
-                t => t.ReleaseDate.Value.Year >= yRange.Start && t.ReleaseDate.Value.Year <= yRange.End);
+            query = query.Where(t =>
+                t.ReleaseDate.Value.Year >= yRange.Start && t.ReleaseDate.Value.Year <= yRange.End);
         }
         else
         {
-            query = query.Where(
-                t => t.ReleaseDate.Value.Year >= yRange.Start);
+            query = query.Where(t => t.ReleaseDate.Value.Year >= yRange.Start);
         }
 
         return query;
+    }
+
+    private async Task<IEnumerable<SpokenLanguage>> GetSpokenLanguagesDbAsync(CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        var sl = await _dbContext.SpokenLanguages.ToListAsync(ct);
+
+        return sl;
     }
 }

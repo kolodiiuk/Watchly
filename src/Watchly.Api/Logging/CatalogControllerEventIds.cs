@@ -13,4 +13,7 @@ internal static class CatalogControllerEventIds
 
     internal static readonly EventId GetEpisodeAttempt = new(5007, nameof(GetEpisodeAttempt));
     internal static readonly EventId GetEpisodeFailed = new(5008, nameof(GetEpisodeFailed));
+
+    internal static readonly EventId GetKeywordSuggestionsFailed = new(5009, nameof(GetKeywordSuggestionsFailed));
+    internal static readonly EventId GetSpokenLanguagesFailed = new(5010, nameof(GetSpokenLanguagesFailed));
 }

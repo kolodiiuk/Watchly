@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Watchly.Domain.Entities;
 
 public sealed class SpokenLanguage
@@ -6,5 +8,6 @@ public sealed class SpokenLanguage
 
     public string Name { get; set; }
 
+    [JsonIgnore]
     public ICollection<TitleSpokenLanguage> TitleSpokenLanguages { get; set; } = new List<TitleSpokenLanguage>();
 }
