@@ -11,6 +11,7 @@ public static class ServiceCollectionExtensions
         serviceCollection.AddScoped<IAuthService, AuthService>();
         serviceCollection.AddScoped<ICommentService, CommentService>();
         serviceCollection.AddScoped<IContentService, ContentService>();
+        serviceCollection.AddScoped<IAdminContentService, AdminContentService>();
         serviceCollection.AddSingleton<IJwtService, JwtService>();
         serviceCollection.AddScoped<IPasswordManagementService, PasswordManagementService>();
         serviceCollection.AddScoped<IVoteService, VoteService>();

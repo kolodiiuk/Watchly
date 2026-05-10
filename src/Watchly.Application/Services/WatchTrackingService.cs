@@ -91,7 +91,46 @@ public class WatchTrackingService : IWatchTrackingService
         ct.ThrowIfCancellationRequested();
         try
         {
-            throw new NotImplementedException();
+            var doesEpisodeExists = await _dbContext.Episodes.AnyAsync(e => e.Id == id, ct);
+            if (!doesEpisodeExists)
+            {
+                return Result.Fail("No episode with such id");
+            }
+
+            var existingActivity = await _dbContext.UserContentActivities
+                .Where(uca => uca.ContentId == id)
+                .OrderByDescending(uca => uca.Id)
+                .FirstOrDefaultAsync(ct);
+            if (existingActivity == null)
+            {
+                var newUCA = new UserContentActivity
+                {
+                    ActivityType = ActivityType.Watched,
+                    ContentId = id,
+                    ContentType = ContentType.Episode,
+                    UserId = userId,
+                    WatchCount = 1,
+                    WatchedAt = DateTime.UtcNow
+                };
+                _dbContext.Add(newUCA);
+                await _dbContext.SaveChangesAsync(ct);
+
+                return Result.Success();
+            }
+
+            var newRewatch = new UserContentActivity
+            {
+                ActivityType = ActivityType.Watched,
+                ContentId = id,
+                ContentType = ContentType.Episode,
+                UserId = userId,
+                WatchCount = existingActivity.WatchCount + 1,
+                WatchedAt = DateTime.UtcNow
+            };
+            _dbContext.Add(newRewatch);
+            await _dbContext.SaveChangesAsync(ct);
+
+            return Result.Success();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -190,7 +229,63 @@ public class WatchTrackingService : IWatchTrackingService
         ct.ThrowIfCancellationRequested();
         try
         {
-            throw new NotImplementedException();
+            var doesEpisodeExists = await _dbContext.Episodes.AnyAsync(e => e.Id == id, ct);
+            if (!doesEpisodeExists)
+            {
+                return Result.Fail("No such episode");
+            }
+
+            var existingUCA = await _dbContext.UserContentActivities
+                .Where(uca => uca.ContentId == id)
+                .FirstOrDefaultAsync(ct);
+
+            if (existingUCA == null)
+            {
+                return Result.Fail("Never watched");
+            }
+
+            switch (existingUCA.WatchCount)
+            {
+                case 0: return Result.Fail("Already unwatched");
+                case 1:
+                {
+                    var now = DateTime.UtcNow;
+                    var newUnwatched = new UserContentActivity()
+                    {
+                        ActivityType = ActivityType.Watched,
+                        ContentId = id,
+                        ContentType = ContentType.Episode,
+                        UserId = userId,
+                        WatchCount = 0,
+                        WatchedAt = now
+                    };
+                    _dbContext.Add(newUnwatched);
+                    const string sql = """
+                                       delete from user_content_activites uca
+                                       where uca.content_id = {0} and watched_at < {1}
+                                       """;
+                    // _dbContext.Database.ExecuteSqlInterpolatedAsync();
+                    break;
+                }
+                default:
+                {
+                    var newDecremented = new UserContentActivity
+                    {
+                        ActivityType = ActivityType.Watched,
+                        ContentId = id,
+                        ContentType = ContentType.Episode,
+                        UserId = userId,
+                        WatchCount = existingUCA.WatchCount - 1,
+                        WatchedAt = DateTime.UtcNow
+                    };
+                    _dbContext.Add(newDecremented);
+                    break;
+                }
+            }
+
+            await _dbContext.SaveChangesAsync(ct);
+
+            return Result.Success();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -206,7 +301,8 @@ public class WatchTrackingService : IWatchTrackingService
         }
     }
 
-    public async Task<Result<IEnumerable<TvShowWatchInfo>>> GetWatchCountInfoTvShowAsync(int id, Guid userId, CancellationToken ct = default)
+    public async Task<Result<IEnumerable<TvShowWatchInfo>>> GetWatchCountInfoTvShowAsync(int id, Guid userId,
+        CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
         try
@@ -232,6 +328,8 @@ public class WatchTrackingService : IWatchTrackingService
         ct.ThrowIfCancellationRequested();
         try
         {
+            //var count = await _dbContext.UserContentActivities
+            //    .Where(uca => uca.ContentId == id);
             throw new NotImplementedException();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
