@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Watchly.Application.Interfaces;
+using Watchly.Application.Services;
 
 namespace Watchly.Api.Controllers;
 
@@ -8,8 +10,10 @@ namespace Watchly.Api.Controllers;
 [Route("api/[controller]")]
 public sealed class WatchListController : BaseController<WatchListController>
 {
-    public WatchListController(ILogger<WatchListController> logger) : base(logger)
+    private readonly IWatchListService _watchListService;
+    public WatchListController(ILogger<WatchListController> logger, IWatchListService watchListService) : base(logger)
     {
+        _watchListService = watchListService;
     }
 
     [EndpointSummary("Adds title to to-watch list.")]
@@ -21,7 +25,21 @@ public sealed class WatchListController : BaseController<WatchListController>
     [HttpPost("to-watch")]
     public async Task<IActionResult> AddTitleToWatchListAsync(int titleId, CancellationToken ct)
     {
-        return StatusCode(418);
+        if (UserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        var res = await _watchListService.AddTitleToWatchListAsync(titleId, UserId, ct);
+        if (res.Failure)
+        {
+            return Problem(
+                title: "Adding to watch list failed",
+                detail: res.Error,
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        return Ok();
     }
 
     [EndpointSummary("Removes title from to-watch list.")]
@@ -33,7 +51,21 @@ public sealed class WatchListController : BaseController<WatchListController>
     [HttpDelete("to-watch/{titleId:int}")]
     public async Task<IActionResult> RemoveTitleFromToWatchAsync(int titleId, CancellationToken ct)
     {
-        return StatusCode(418);
+        if (UserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        var res = await _watchListService.RemoveTitleFromWatchListAsync(titleId, UserId, ct);
+        if (res.Failure)
+        {
+            return Problem(
+                title: "Adding to watch list failed",
+                detail: res.Error,
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        return Ok();
     }
 
     [EndpointSummary("Creates a new custom watchlist.")]
@@ -45,7 +77,20 @@ public sealed class WatchListController : BaseController<WatchListController>
     [HttpPost("new")]
     public async Task<IActionResult> CreateCustWatchListAsync(string name, CancellationToken ct)
     {
-        return StatusCode(418);
+        if (UserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        var res = await _watchListService.CreateCustWatchListAsync(name, UserId, ct);
+        if (res.Failure)
+        {
+            return Problem(
+                title: "Creating custom watch list failed",
+                detail: res.Error,
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+        return Ok();
     }
 
     [EndpointSummary("Adds title to custom watchlist.")]
@@ -58,7 +103,21 @@ public sealed class WatchListController : BaseController<WatchListController>
     public async Task<IActionResult> AddTitleToCustWatchListAsync(
         int titleId, int watchListId, CancellationToken ct)
     {
-        return StatusCode(418);
+        if (UserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        var res = await _watchListService.AddTitleToCustWatchListAsync(titleId, watchListId, ct);
+        if (res.Failure)
+        {
+            return Problem(
+                title: "Adding to watch list failed",
+                detail: res.Error,
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        return Ok();
     }
 
     [EndpointSummary("Removes title from custom watchlist.")]
@@ -67,9 +126,21 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [HttpDelete("cust/{titleId:int}")]
-    public async Task<IActionResult> RemoveTitleFromCustWatchListAsync(int titleId, CancellationToken ct)
+    [HttpDelete("cust/{titleId:int}/{watchListId:int}")]
+    public async Task<IActionResult> RemoveTitleFromCustWatchListAsync(int titleId, int watchListId, CancellationToken ct)
     {
-        return StatusCode(418);
+        if (UserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+        var res = await _watchListService.RemoveTitleFromCustWatchListAsync(titleId, watchListId, ct);
+        if (res.Failure)
+        {
+            return Problem(
+                title: "Removing from watch list failed",
+                detail: res.Error,
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+        return Ok();
     }
 }
