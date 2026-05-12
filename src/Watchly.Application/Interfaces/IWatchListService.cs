@@ -1,4 +1,6 @@
 ﻿using Watchly.Domain.Utils;
+using Watchly.Application.Models.Content;
+using Watchly.Application.Models.WatchList;
 
 namespace Watchly.Application.Interfaces;
 
@@ -11,5 +13,10 @@ public interface IWatchListService
         int titleId, int watchListId, CancellationToken ct);
     public Task<Result> RemoveTitleFromCustWatchListAsync(
         int titleId, int watchListId, CancellationToken ct);
+    public Task<Result> DeleteCustWatchListAsync(int watchListId, CancellationToken ct);
+    public Task<Result> RenameCustWatchListAsync(int watchListId, string newName, CancellationToken ct);
+    public Task<Result<IEnumerable<TitleShortInfo>>> GetTitlesInWatchListAsync(Guid userId, CancellationToken ct);
+    public Task<Result<IEnumerable<TitleShortInfo>>> GetTitlesInCustWatchListAsync(int watchListId, Guid userId, CancellationToken ct);
+    public Task<Result<IEnumerable<WatchListInfo>>> GetUserWatchListsAsync(Guid userId, CancellationToken ct);
+    public Task<Result<IEnumerable<WatchListShortInfo>>> GetWatchListsWithTitleAsync(int titleId, Guid userId, CancellationToken ct);
 }
-
