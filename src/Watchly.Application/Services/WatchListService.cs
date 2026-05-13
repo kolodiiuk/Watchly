@@ -163,6 +163,58 @@ public sealed class WatchListService : IWatchListService
         }
     }
 
+    public async Task<Result> ClearDefaultWatchListAsync(Guid userId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        try
+        {
+            int watchListId = GetUserDefaultWatchListId(userId);
+            return await ClearWatchListByIdAsync(watchListId, userId, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (NpgsqlException e)
+        {
+            return Result.Fail($"DB error: {e.Message}");
+        }
+        catch (Exception e)
+        {
+            return Result.Fail($"Error: {e.Message}");
+        }
+    }
+
+    public async Task<Result> ClearWatchListByIdAsync(int watchListId, Guid userId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        try
+        {
+            if (IsUserWatchListOwner(watchListId, userId) == false)
+            {
+                return Result.Fail("User does not exist or does not own a watchlist with given id");
+            }
+            var items = await _dbContext.WatchListItems
+                .Where(i => i.WatchList.Id == watchListId)
+                .ToListAsync(ct);
+            _dbContext.RemoveRange(items);
+            await _dbContext.SaveChangesAsync(ct);
+            return Result.Success();
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (NpgsqlException e)
+        {
+            return Result.Fail($"DB error: {e.Message}");
+        }
+        catch (Exception e)
+        {
+            return Result.Fail($"Error: {e.Message}");
+        }
+    }
+
     public async Task<Result> CreateCustWatchListAsync(string name, Guid userId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();

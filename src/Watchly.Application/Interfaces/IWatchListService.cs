@@ -10,6 +10,8 @@ public interface IWatchListService
     public Task<Result> AddTitleToWatchListByIdAsync(int titleId, int watchListId, Guid userId, CancellationToken ct);
     public Task<Result> RemoveTitleFromDefaultWatchListAsync(int titleId, Guid userId, CancellationToken ct);
     public Task<Result> RemoveTitleFromWatchListByIdAsync(int titleId, int watchListId, Guid userId, CancellationToken ct);
+    public Task<Result> ClearDefaultWatchListAsync(Guid userId, CancellationToken ct);
+    public Task<Result> ClearWatchListByIdAsync(int watchListId, Guid userId, CancellationToken ct);
 
     public Task<Result> CreateCustWatchListAsync(string name, Guid userId, CancellationToken ct);
     public Task<Result> DeleteCustWatchListAsync(int watchListId, Guid userId, CancellationToken ct);

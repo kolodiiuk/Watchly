@@ -92,6 +92,7 @@ public sealed class WatchListController : BaseController<WatchListController>
                 detail: res.Error,
                 statusCode: StatusCodes.Status500InternalServerError);
         }
+
         return Ok();
     }
 
@@ -143,6 +144,7 @@ public sealed class WatchListController : BaseController<WatchListController>
                 detail: res.Error,
                 statusCode: StatusCodes.Status500InternalServerError);
         }
+
         return Ok();
     }
 
@@ -168,6 +170,7 @@ public sealed class WatchListController : BaseController<WatchListController>
                 detail: res.Error,
                 statusCode: StatusCodes.Status500InternalServerError);
         }
+
         return Ok();
     }
 
@@ -192,6 +195,7 @@ public sealed class WatchListController : BaseController<WatchListController>
                 detail: res.Error,
                 statusCode: StatusCodes.Status500InternalServerError);
         }
+
         return Ok();
     }
 
@@ -217,6 +221,7 @@ public sealed class WatchListController : BaseController<WatchListController>
                 detail: res.Error,
                 statusCode: StatusCodes.Status500InternalServerError);
         }
+
         return Ok(res.Value);
     }
 
@@ -242,6 +247,7 @@ public sealed class WatchListController : BaseController<WatchListController>
                 detail: res.Error,
                 statusCode: StatusCodes.Status500InternalServerError);
         }
+
         return Ok(res.Value);
     }
 
@@ -267,6 +273,7 @@ public sealed class WatchListController : BaseController<WatchListController>
                 detail: res.Error,
                 statusCode: StatusCodes.Status500InternalServerError);
         }
+
         return Ok(res.Value);
     }
 
@@ -292,6 +299,57 @@ public sealed class WatchListController : BaseController<WatchListController>
                 detail: res.Error,
                 statusCode: StatusCodes.Status500InternalServerError);
         }
+
         return Ok(res.Value);
+    }
+
+    [EndpointSummary("Clears default watchlist.")]
+    [EndpointDescription("Removes all titles from default watchlist")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [HttpDelete("to-watch/clear/")]
+    public async Task<IActionResult> ClearDefaultWatchListAsync(CancellationToken ct)
+    {
+        if (UserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+        var res = await _watchListService.ClearDefaultWatchListAsync(UserId, ct);
+        if (res.Failure)
+        {
+            return Problem(
+                title: "Clearing default watch list failed",
+                detail: res.Error,
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+
+        return Ok();
+    }
+
+    [EndpointSummary("Clears watchlist.")]
+    [EndpointDescription("Removes all titles from watchlist by id")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [HttpDelete("to-watch/clear/{watchListId:int}")]
+    public async Task<IActionResult> ClearWatchListByIdAsync(int watchListId, CancellationToken ct)
+        {
+            if (UserId == Guid.Empty)
+            {
+                return Unauthorized();
+            }
+            var res = await _watchListService.ClearWatchListByIdAsync(watchListId, UserId, ct);
+            if (res.Failure)
+            {
+                return Problem(
+                    title: "Clearing watch list failed",
+                    detail: res.Error,
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            return Ok();
     }
 }
