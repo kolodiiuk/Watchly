@@ -135,7 +135,7 @@ public sealed class WatchListService : IWatchListService
             }
 
             var item = await _dbContext.WatchListItems.FirstOrDefaultAsync(
-                i => i.Id == titleId &&
+                i => i.Title.Id == titleId &&
                 i.WatchList.Id == watchListId,
                 ct);
 
