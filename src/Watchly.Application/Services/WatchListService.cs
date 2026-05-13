@@ -23,106 +23,9 @@ public sealed class WatchListService : IWatchListService
         ct.ThrowIfCancellationRequested();
         try
         {
-            var title = await _dbContext.Titles.FindAsync([titleId], ct);
-            if (title is null)
-            {
-                return Result.Fail("No such title");
-            }
+            int watchListId = GetUserDefaultWatchListId(userId);
 
-            var watchList = await _dbContext.WatchLists
-                .FirstOrDefaultAsync(
-                    w => w.UserId == userId &&
-                    w.Name == "Default",
-                    ct);
-            if (watchList is null)
-            {
-                watchList = new WatchList
-                {
-                    Name = "Default",
-                    UserId = userId
-                };
-                await _dbContext.AddAsync(watchList, ct);
-                await _dbContext.SaveChangesAsync(ct);
-            }
-
-            var item = new WatchListItem
-            {
-                TitleId = titleId,
-                WatchListId = watchList.Id
-            };
-
-            await _dbContext.AddAsync(item, ct);
-            await _dbContext.SaveChangesAsync(ct);
-
-            return Result.Success();
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (NpgsqlException e)
-        {
-            return Result.Fail($"DB problems: {e.Message}");
-        }
-        catch (Exception e)
-        {
-            return Result.Fail($"{e.Message}");
-        }
-    }
-    public async Task<Result> RemoveTitleFromWatchListAsync(int titleId, Guid userId, CancellationToken ct)
-    {
-        ct.ThrowIfCancellationRequested();
-        try
-        {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
-            if (user is null)
-            {
-                return Result.Fail("user is not found");
-            }
-
-            var item = await _dbContext.WatchListItems.FirstOrDefaultAsync(
-                i => i.Id == titleId &&
-                i.WatchList.UserId == userId,
-                ct);
-
-            if (item is null)
-            {
-                return Result.Fail("There is no such title in user's watchlist");
-            }
-
-            _dbContext.Remove(item);
-            await _dbContext.SaveChangesAsync(ct);
-
-            return Result.Success();
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (NpgsqlException e)
-        {
-            return Result.Fail($"DB error: {e.Message}");
-        }
-        catch (Exception e)
-        {
-            return Result.Fail($"Error: {e.Message}");
-        }
-    }
-    public async Task<Result> CreateCustWatchListAsync(string name, Guid userId, CancellationToken ct)
-    {
-        ct.ThrowIfCancellationRequested();
-        try
-        {   
-            var newList = new WatchList
-            {
-                Name = name,
-                UserId = userId
-            };
-
-            await _dbContext.AddAsync(newList, ct);
-            await _dbContext.SaveChangesAsync(ct);
-
-            return Result.Success();
+            return await AddTitleToCustWatchListAsync(titleId, watchListId, ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -158,7 +61,17 @@ public sealed class WatchListService : IWatchListService
                 return Result.Fail("No such watch list");
             }
 
-            var item = new WatchListItem
+            var item = await _dbContext.WatchListItems.FirstOrDefaultAsync(
+                i => i.TitleId == titleId &&
+                i.WatchList.Id == watchListId,
+                ct);
+
+            if (item is not null)
+            {
+                return Result.Fail("This title is already in the watch list");
+            }
+
+            item = new WatchListItem
             {
                 TitleId = titleId,
                 WatchListId = watchList.Id
@@ -180,6 +93,35 @@ public sealed class WatchListService : IWatchListService
         catch (Exception e)
         {
             return Result.Fail($"{e.Message}");
+        }
+    }
+
+    public async Task<Result> RemoveTitleFromWatchListAsync(int titleId, Guid userId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        try
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+            if (user is null)
+            {
+                return Result.Fail("user is not found");
+            }
+
+            int watchListId = GetUserDefaultWatchListId(userId);
+
+            return await RemoveTitleFromCustWatchListAsync(titleId, watchListId, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (NpgsqlException e)
+        {
+            return Result.Fail($"DB error: {e.Message}");
+        }
+        catch (Exception e)
+        {
+            return Result.Fail($"Error: {e.Message}");
         }
     }
 
@@ -217,6 +159,36 @@ public sealed class WatchListService : IWatchListService
         }
     }
 
+    public async Task<Result> CreateCustWatchListAsync(string name, Guid userId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        try
+        {   
+            var newList = new WatchList
+            {
+                Name = name,
+                UserId = userId
+            };
+
+            await _dbContext.AddAsync(newList, ct);
+            await _dbContext.SaveChangesAsync(ct);
+
+            return Result.Success();
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (NpgsqlException e)
+        {
+            return Result.Fail($"DB problems: {e.Message}");
+        }
+        catch (Exception e)
+        {
+            return Result.Fail($"{e.Message}");
+        }
+    }
+ 
     public async Task<Result> DeleteCustWatchListAsync(int watchListId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -278,10 +250,6 @@ public sealed class WatchListService : IWatchListService
             {
                 return Result.Fail("No such watch list");
             }
-            if (watchList.Name == "Default")
-            {
-                return Result.Fail("Cannot rename default watch list");
-            }
 
             watchList.Name = newName;
             _dbContext.Update(watchList);
@@ -305,15 +273,9 @@ public sealed class WatchListService : IWatchListService
 
     public async Task<Result<IEnumerable<TitleShortInfo>>> GetTitlesInWatchListAsync(Guid userId, CancellationToken ct)
     {
-        var defaultWatchList = await _dbContext.WatchLists
-            .FirstOrDefaultAsync(w => w.UserId == userId && w.Name == "Default", ct);
+        var defaultWatchListId = GetUserDefaultWatchListId(userId);
 
-        if (defaultWatchList is null)
-        {
-            return Result<IEnumerable<TitleShortInfo>>.Success(Enumerable.Empty<TitleShortInfo>());
-        }
-
-        return await GetTitlesInCustWatchListAsync(defaultWatchList.Id, userId, ct);
+        return await GetTitlesInCustWatchListAsync(defaultWatchListId, userId, ct);
     }
 
     public async Task<Result<IEnumerable<TitleShortInfo>>> GetTitlesInCustWatchListAsync(int watchListId, Guid userId, CancellationToken ct)
@@ -351,7 +313,7 @@ public sealed class WatchListService : IWatchListService
         ct.ThrowIfCancellationRequested();
         try
         {
-            var watchList = await _dbContext.WatchLists
+            var watchLists = await _dbContext.WatchLists
                 .Where(w => w.UserId == userId)
                 .Select(w => new WatchListInfo(
                     w.Id, 
@@ -364,7 +326,7 @@ public sealed class WatchListService : IWatchListService
                     ))
                 ).ToListAsync(ct);
 
-            return Result<IEnumerable<WatchListInfo>>.Success(watchList);
+            return Result<IEnumerable<WatchListInfo>>.Success(watchLists);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -404,6 +366,24 @@ public sealed class WatchListService : IWatchListService
         {
             return Result<IEnumerable<WatchListShortInfo>>.Fail($"{e.Message}");
         }
+    }
+
+    private int GetUserDefaultWatchListId(Guid userId)
+    {
+        var watchList = _dbContext.WatchLists
+            .FirstOrDefault(w => w.UserId == userId && w.Name == "Default");
+
+        if (watchList is null)
+        {
+            watchList = new WatchList
+            {
+                Name = "Default",
+                UserId = userId
+            };
+            _dbContext.Add(watchList);
+            _dbContext.SaveChanges();
+        }
+        return watchList.Id;
     }
 }
 
