@@ -3,9 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models.Content;
 using Watchly.Application.Models.WatchList;
-using Watchly.Application.Services;
 using Watchly.Domain.Entities;
-using Watchly.Domain.Utils;
 
 namespace Watchly.Api.Controllers;
 
@@ -112,7 +110,7 @@ public sealed class WatchListController : BaseController<WatchListController>
             return Unauthorized();
         }
 
-        var res = await _watchListService.AddTitleToCustWatchListAsync(titleId, watchListId, ct);
+        var res = await _watchListService.AddTitleToCustWatchListAsync(titleId, watchListId, UserId, ct);
         if (res.Failure)
         {
             return Problem(
@@ -137,7 +135,7 @@ public sealed class WatchListController : BaseController<WatchListController>
         {
             return Unauthorized();
         }
-        var res = await _watchListService.RemoveTitleFromCustWatchListAsync(titleId, watchListId, ct);
+        var res = await _watchListService.RemoveTitleFromCustWatchListAsync(titleId, watchListId, UserId, ct);
         if (res.Failure)
         {
             return Problem(
@@ -162,7 +160,7 @@ public sealed class WatchListController : BaseController<WatchListController>
             return Unauthorized();
         }
 
-        var res = await _watchListService.DeleteCustWatchListAsync(watchListId, ct);
+        var res = await _watchListService.DeleteCustWatchListAsync(watchListId, UserId, ct);
         if (res.Failure)
         {
             return Problem(
@@ -186,7 +184,7 @@ public sealed class WatchListController : BaseController<WatchListController>
         {
             return Unauthorized();
         }
-        var res = await _watchListService.RenameCustWatchListAsync(watchListId, newName, ct);
+        var res = await _watchListService.RenameCustWatchListAsync(watchListId, newName, UserId, ct);
         if (res.Failure)
         {
             return Problem(
@@ -248,7 +246,7 @@ public sealed class WatchListController : BaseController<WatchListController>
     }
 
     [EndpointSummary("Gets user's watchlists.")]
-    [EndpointDescription("Gets all short info of all watchlists owned by the user.")]
+    [EndpointDescription("Gets short info of all watchlists owned by the user.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

@@ -25,7 +25,7 @@ public sealed class WatchListService : IWatchListService
         {
             int watchListId = GetUserDefaultWatchListId(userId);
 
-            return await AddTitleToCustWatchListAsync(titleId, watchListId, ct);
+            return await AddTitleToCustWatchListAsync(titleId, watchListId, userId, ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -41,11 +41,16 @@ public sealed class WatchListService : IWatchListService
         }
     }
 
-    public async Task<Result> AddTitleToCustWatchListAsync(int titleId, int watchListId, CancellationToken ct)
+    public async Task<Result> AddTitleToCustWatchListAsync(int titleId, int watchListId, Guid userId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         try
         {
+            if(IsUserWatchListOwner(watchListId, userId) == false)
+            {
+                return Result.Fail("User does not exist or does not own a watchlist with given id");
+            }
+
             var title = await _dbContext.Titles.FindAsync([titleId], ct);
             if (title is null)
             {
@@ -101,15 +106,9 @@ public sealed class WatchListService : IWatchListService
         ct.ThrowIfCancellationRequested();
         try
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
-            if (user is null)
-            {
-                return Result.Fail("user is not found");
-            }
-
             int watchListId = GetUserDefaultWatchListId(userId);
 
-            return await RemoveTitleFromCustWatchListAsync(titleId, watchListId, ct);
+            return await RemoveTitleFromCustWatchListAsync(titleId, watchListId, userId, ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -125,11 +124,16 @@ public sealed class WatchListService : IWatchListService
         }
     }
 
-    public async Task<Result> RemoveTitleFromCustWatchListAsync(int titleId, int watchListId, CancellationToken ct)
+    public async Task<Result> RemoveTitleFromCustWatchListAsync(int titleId, int watchListId, Guid userId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         try
         {
+            if (IsUserWatchListOwner(watchListId, userId) == false)
+            {
+                return Result.Fail("User does not exist or does not own a watchlist with given id");
+            }
+
             var item = await _dbContext.WatchListItems.FirstOrDefaultAsync(
                 i => i.Id == titleId &&
                 i.WatchList.Id == watchListId,
@@ -189,20 +193,21 @@ public sealed class WatchListService : IWatchListService
         }
     }
  
-    public async Task<Result> DeleteCustWatchListAsync(int watchListId, CancellationToken ct)
+    public async Task<Result> DeleteCustWatchListAsync(int watchListId, Guid userId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         try
         {
+            if (IsUserWatchListOwner(watchListId, userId) == false)
+            {
+                return Result.Fail("User does not exist or does not own a watchlist with given id");
+            }
+
             var watchList = await _dbContext.WatchLists
                 .FirstOrDefaultAsync(
                     w => w.Id == watchListId,
                     ct);
          
-            if (watchList is null)
-            {
-                return Result.Fail("No such watch list");
-            }
             if (watchList.Name == "Default")
             {
                 return Result.Fail("Cannot delete default watch list");
@@ -227,7 +232,7 @@ public sealed class WatchListService : IWatchListService
         }
     }
 
-    public async Task<Result> RenameCustWatchListAsync(int watchListId, string newName, CancellationToken ct)
+    public async Task<Result> RenameCustWatchListAsync(int watchListId, string newName, Guid userId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         try
@@ -283,6 +288,11 @@ public sealed class WatchListService : IWatchListService
         ct.ThrowIfCancellationRequested();
         try
         {
+            if (IsUserWatchListOwner(watchListId, userId) == false)
+            {
+                return Result<IEnumerable<TitleShortInfo>>.Fail("User does not exist or does not own a watchlist with given id");
+            }
+
             var titles = await _dbContext.WatchListItems
                 .Where(i => i.WatchList.Id == watchListId && i.WatchList.UserId == userId)
                 .Select(i => new TitleShortInfo(
@@ -384,6 +394,22 @@ public sealed class WatchListService : IWatchListService
             _dbContext.SaveChanges();
         }
         return watchList.Id;
+    }
+
+    private bool IsUserWatchListOwner(int watchListId, Guid userId)
+    {
+        var user = _dbContext.Users
+            .FirstOrDefault(u => u.Id == userId);
+
+        if (user is null)
+        {
+            return false;
+        }
+
+        var watchList = _dbContext.WatchLists
+            .FirstOrDefault(w => w.Id == watchListId);
+
+        return watchList is not null && watchList.UserId == userId;
     }
 }
 
