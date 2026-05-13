@@ -24,7 +24,7 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [HttpPost("to-watch")]
+    [HttpPost("to-watch/")]
     public async Task<IActionResult> AddTitleToDefaultWatchListAsync(int titleId, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
@@ -50,7 +50,7 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [HttpDelete("to-watch/{titleId:int}")]
+    [HttpDelete("to-watch/")]
     public async Task<IActionResult> RemoveTitleFromDefaultWatchListAsync(int titleId, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
@@ -76,7 +76,7 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [HttpPost("new")]
+    [HttpPost("to-watch/new")]
     public async Task<IActionResult> CreateCustWatchListAsync(string name, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
@@ -95,13 +95,13 @@ public sealed class WatchListController : BaseController<WatchListController>
         return Ok();
     }
 
-    [EndpointSummary("Adds title to custom watchlist.")]
-    [EndpointDescription("Adds the specified title to a specific custom watchlist.")]
+    [EndpointSummary("Adds title to specific watchlist.")]
+    [EndpointDescription("Adds the specified title to a specific watchlist by id.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [HttpPost("add")]
+    [HttpPost("to-watch/{watchListId:int}")]
     public async Task<IActionResult> AddTitleToWatchListByIdAsync(
         int titleId, int watchListId, CancellationToken ct)
     {
@@ -122,13 +122,13 @@ public sealed class WatchListController : BaseController<WatchListController>
         return Ok();
     }
 
-    [EndpointSummary("Removes title from custom watchlist.")]
-    [EndpointDescription("Removes the specified title from a custom watchlist.")]
+    [EndpointSummary("Removes title from specific watchlist.")]
+    [EndpointDescription("Removes the specified title from a specific watchlist by id.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [HttpDelete("cust/{titleId:int}/{watchListId:int}")]
+    [HttpDelete("to-watch/{watchListId:int}")]
     public async Task<IActionResult> RemoveTitleFromWatchListByIdAsync(int titleId, int watchListId, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
@@ -152,7 +152,7 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [HttpDelete("cust/{watchListId:int}")]
+    [HttpDelete("to-watch/delete/{watchListId:int}")]
     public async Task<IActionResult> DeleteCustWatchListAsync(int watchListId, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
@@ -177,7 +177,7 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [HttpPatch("cust/{watchListId:int}")]
+    [HttpPatch("to-watch/{watchListId:int}")]
     public async Task<IActionResult> RenameCustWatchListAsync(int watchListId, string newName, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
@@ -201,7 +201,7 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [HttpGet("default/titles")]
+    [HttpGet("to-watch/titles")]
     public async Task<ActionResult<IEnumerable<Title>>> GetTitlesInDefaultWatchListAsync(CancellationToken ct)
     {
         if (UserId == Guid.Empty)
@@ -226,7 +226,7 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [HttpGet("{watchListId:int}/titles")]
+    [HttpGet("to-watch/titles/{watchListId:int}")]
     public async Task<ActionResult<IEnumerable<TitleShortInfo>>> GetTitlesInWatchListByIdAsync(int watchListId, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
@@ -251,7 +251,7 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [HttpGet("user/watchlists")]
+    [HttpGet("to-watch/lists")]
     public async Task<ActionResult<IEnumerable<WatchListInfo>>> GetUserWatchListsAsync(CancellationToken ct)
     {
         if (UserId == Guid.Empty)
@@ -276,7 +276,7 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [HttpGet("title/{titleId:int}/watchlists")]
+    [HttpGet("to-watch/lists/{titleId:int}")]
     public async Task<ActionResult<IEnumerable<WatchListShortInfo>>> GetWatchListsWithTitleAsync(int titleId, CancellationToken ct)
     {
         if(UserId == Guid.Empty)
