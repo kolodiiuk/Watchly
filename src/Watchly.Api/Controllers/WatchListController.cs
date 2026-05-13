@@ -18,25 +18,25 @@ public sealed class WatchListController : BaseController<WatchListController>
         _watchListService = watchListService;
     }
 
-    [EndpointSummary("Adds title to to-watch list.")]
-    [EndpointDescription("Adds the specified title to the user's to-watch list.")]
+    [EndpointSummary("Adds title to default to-watch list.")]
+    [EndpointDescription("Adds the specified title to the user's default to-watch list.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [HttpPost("to-watch")]
-    public async Task<IActionResult> AddTitleToWatchListAsync(int titleId, CancellationToken ct)
+    public async Task<IActionResult> AddTitleToDefaultWatchListAsync(int titleId, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
         {
             return Unauthorized();
         }
 
-        var res = await _watchListService.AddTitleToWatchListAsync(titleId, UserId, ct);
+        var res = await _watchListService.AddTitleToDefaultWatchListAsync(titleId, UserId, ct);
         if (res.Failure)
         {
             return Problem(
-                title: "Adding to watch list failed",
+                title: "Adding to default watch list failed",
                 detail: res.Error,
                 statusCode: StatusCodes.Status500InternalServerError);
         }
@@ -44,25 +44,25 @@ public sealed class WatchListController : BaseController<WatchListController>
         return Ok();
     }
 
-    [EndpointSummary("Removes title from to-watch list.")]
-    [EndpointDescription("Removes the specified title from the user's to-watch list.")]
+    [EndpointSummary("Removes title from default to-watch list.")]
+    [EndpointDescription("Removes the specified title from the user's default to-watch list.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [HttpDelete("to-watch/{titleId:int}")]
-    public async Task<IActionResult> RemoveTitleFromToWatchAsync(int titleId, CancellationToken ct)
+    public async Task<IActionResult> RemoveTitleFromDefaultWatchListAsync(int titleId, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
         {
             return Unauthorized();
         }
 
-        var res = await _watchListService.RemoveTitleFromWatchListAsync(titleId, UserId, ct);
+        var res = await _watchListService.RemoveTitleFromDefaultWatchListAsync(titleId, UserId, ct);
         if (res.Failure)
         {
             return Problem(
-                title: "Adding to watch list failed",
+                title: "Removing from default watch list failed",
                 detail: res.Error,
                 statusCode: StatusCodes.Status500InternalServerError);
         }
@@ -102,7 +102,7 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [HttpPost("add")]
-    public async Task<IActionResult> AddTitleToCustWatchListAsync(
+    public async Task<IActionResult> AddTitleToWatchListByIdAsync(
         int titleId, int watchListId, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
@@ -110,7 +110,7 @@ public sealed class WatchListController : BaseController<WatchListController>
             return Unauthorized();
         }
 
-        var res = await _watchListService.AddTitleToCustWatchListAsync(titleId, watchListId, UserId, ct);
+        var res = await _watchListService.AddTitleToWatchListByIdAsync(titleId, watchListId, UserId, ct);
         if (res.Failure)
         {
             return Problem(
@@ -129,13 +129,13 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [HttpDelete("cust/{titleId:int}/{watchListId:int}")]
-    public async Task<IActionResult> RemoveTitleFromCustWatchListAsync(int titleId, int watchListId, CancellationToken ct)
+    public async Task<IActionResult> RemoveTitleFromWatchListByIdAsync(int titleId, int watchListId, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
         {
             return Unauthorized();
         }
-        var res = await _watchListService.RemoveTitleFromCustWatchListAsync(titleId, watchListId, UserId, ct);
+        var res = await _watchListService.RemoveTitleFromWatchListByIdAsync(titleId, watchListId, UserId, ct);
         if (res.Failure)
         {
             return Problem(
@@ -202,14 +202,14 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [HttpGet("default/titles")]
-    public async Task<ActionResult<IEnumerable<Title>>> GetTitlesInWatchListAsync(CancellationToken ct)
+    public async Task<ActionResult<IEnumerable<Title>>> GetTitlesInDefaultWatchListAsync(CancellationToken ct)
     {
         if (UserId == Guid.Empty)
         {
             return Unauthorized();
         }
 
-        var res = await _watchListService.GetTitlesInWatchListAsync(UserId, ct);
+        var res = await _watchListService.GetTitlesInDefaultWatchListAsync(UserId, ct);
         if (res.Failure)
         {
             return Problem(
@@ -227,14 +227,14 @@ public sealed class WatchListController : BaseController<WatchListController>
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [HttpGet("{watchListId:int}/titles")]
-    public async Task<ActionResult<IEnumerable<TitleShortInfo>>> GetTitlesInCustWatchListAsync(int watchListId, CancellationToken ct)
+    public async Task<ActionResult<IEnumerable<TitleShortInfo>>> GetTitlesInWatchListByIdAsync(int watchListId, CancellationToken ct)
     {
         if (UserId == Guid.Empty)
         {
             return Unauthorized();
         }
 
-        var res = await _watchListService.GetTitlesInCustWatchListAsync(watchListId, UserId, ct);
+        var res = await _watchListService.GetTitlesInWatchListByIdAsync(watchListId, UserId, ct);
         if (res.Failure)
         {
             return Problem(

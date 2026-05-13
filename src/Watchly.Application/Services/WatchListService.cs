@@ -18,14 +18,14 @@ public sealed class WatchListService : IWatchListService
         _dbContext = context;
     }
 
-    public async Task<Result> AddTitleToWatchListAsync(int titleId, Guid userId, CancellationToken ct)
+    public async Task<Result> AddTitleToDefaultWatchListAsync(int titleId, Guid userId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         try
         {
             int watchListId = GetUserDefaultWatchListId(userId);
 
-            return await AddTitleToCustWatchListAsync(titleId, watchListId, userId, ct);
+            return await AddTitleToWatchListByIdAsync(titleId, watchListId, userId, ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -41,7 +41,7 @@ public sealed class WatchListService : IWatchListService
         }
     }
 
-    public async Task<Result> AddTitleToCustWatchListAsync(int titleId, int watchListId, Guid userId, CancellationToken ct)
+    public async Task<Result> AddTitleToWatchListByIdAsync(int titleId, int watchListId, Guid userId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         try
@@ -101,14 +101,14 @@ public sealed class WatchListService : IWatchListService
         }
     }
 
-    public async Task<Result> RemoveTitleFromWatchListAsync(int titleId, Guid userId, CancellationToken ct)
+    public async Task<Result> RemoveTitleFromDefaultWatchListAsync(int titleId, Guid userId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         try
         {
             int watchListId = GetUserDefaultWatchListId(userId);
 
-            return await RemoveTitleFromCustWatchListAsync(titleId, watchListId, userId, ct);
+            return await RemoveTitleFromWatchListByIdAsync(titleId, watchListId, userId, ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -124,7 +124,7 @@ public sealed class WatchListService : IWatchListService
         }
     }
 
-    public async Task<Result> RemoveTitleFromCustWatchListAsync(int titleId, int watchListId, Guid userId, CancellationToken ct)
+    public async Task<Result> RemoveTitleFromWatchListByIdAsync(int titleId, int watchListId, Guid userId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         try
@@ -276,14 +276,14 @@ public sealed class WatchListService : IWatchListService
         }
     }
 
-    public async Task<Result<IEnumerable<TitleShortInfo>>> GetTitlesInWatchListAsync(Guid userId, CancellationToken ct)
+    public async Task<Result<IEnumerable<TitleShortInfo>>> GetTitlesInDefaultWatchListAsync(Guid userId, CancellationToken ct)
     {
         var defaultWatchListId = GetUserDefaultWatchListId(userId);
 
-        return await GetTitlesInCustWatchListAsync(defaultWatchListId, userId, ct);
+        return await GetTitlesInWatchListByIdAsync(defaultWatchListId, userId, ct);
     }
 
-    public async Task<Result<IEnumerable<TitleShortInfo>>> GetTitlesInCustWatchListAsync(int watchListId, Guid userId, CancellationToken ct)
+    public async Task<Result<IEnumerable<TitleShortInfo>>> GetTitlesInWatchListByIdAsync(int watchListId, Guid userId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         try
