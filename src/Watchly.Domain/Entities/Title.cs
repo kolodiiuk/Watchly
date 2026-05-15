@@ -21,6 +21,8 @@ public class Title
 
     public bool IsAdult { get; set; }
 
+    public bool IsDeleted { get; set; }
+
     public string Name { get; set; }
 
     public string HomePage { get; set; }

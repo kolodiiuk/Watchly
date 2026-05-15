@@ -12,6 +12,8 @@ internal sealed class EpisodeConfiguration : IEntityTypeConfiguration<Episode>
 
         builder.Property(e => e.Id);
         builder.Property(e => e.SeasonId).IsRequired();
+        builder.Property(e => e.TvShowId);
+        builder.Property(e => e.IsDeleted).IsRequired().HasDefaultValue(false);
         builder.Property(e => e.OrdinalNumber).IsRequired();
         builder.Property(e => e.Runtime).IsRequired();
         builder.Property(e => e.Name).HasMaxLength(300).IsRequired();
@@ -25,6 +27,9 @@ internal sealed class EpisodeConfiguration : IEntityTypeConfiguration<Episode>
         builder.HasOne(e => e.Season)
             .WithMany(s => s.Episodes)
             .HasForeignKey(e => e.SeasonId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(e => e.TvShow)
+            .WithMany(tvShow => tvShow.Episodes)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

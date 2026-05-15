@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Watchly.Domain.Entities;
 using Watchly.Infrastructure.Extensions;
+using Watchly.Infrastructure.Models;
 
 namespace Watchly.Infrastructure.DbContexts;
 
@@ -51,12 +52,16 @@ public class WatchlyDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid
 
     public DbSet<WatchListItem> WatchListItems { get; set; }
 
+    public DbSet<EpisodeWatchInfo> EpisodeWatchInfos => Set<EpisodeWatchInfo>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
         builder.UseSnakeCaseNamingConvention();
         builder.ApplyConfigurationsFromAssembly(Assembly.GetAssembly(typeof(WatchlyDbContext))!);
+
+        builder.Entity<EpisodeWatchInfo>().HasNoKey();
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

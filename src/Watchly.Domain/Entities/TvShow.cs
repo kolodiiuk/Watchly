@@ -25,4 +25,6 @@ public sealed class TvShow : Title
     public string CreatedBy { get; set; }
 
     public int? EpisodeRunTime { get; set; }
+
+    public ICollection<Episode> Episodes { get; set; } = new List<Episode>();
 }

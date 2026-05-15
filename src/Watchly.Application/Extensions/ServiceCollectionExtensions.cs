@@ -15,6 +15,7 @@ public static class ServiceCollectionExtensions
         serviceCollection.AddSingleton<IJwtService, JwtService>();
         serviceCollection.AddScoped<IPasswordManagementService, PasswordManagementService>();
         serviceCollection.AddScoped<IVoteService, VoteService>();
+        serviceCollection.AddScoped<IWatchTrackingService, WatchTrackingService>();
         serviceCollection.AddScoped<IUserManagementService, UserManagementService>();
     }
 }

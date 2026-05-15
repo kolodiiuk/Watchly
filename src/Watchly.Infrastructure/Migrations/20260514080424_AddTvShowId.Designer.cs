@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Watchly.Infrastructure.DbContexts;
@@ -11,9 +12,11 @@ using Watchly.Infrastructure.DbContexts;
 namespace Watchly.Infrastructure.Migrations
 {
     [DbContext(typeof(WatchlyDbContext))]
-    partial class WatchlyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260514080424_AddTvShowId")]
+    partial class AddTvShowId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -244,12 +247,6 @@ namespace Watchly.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_deleted");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -576,12 +573,6 @@ namespace Watchly.Infrastructure.Migrations
                     b.Property<bool>("IsAdult")
                         .HasColumnType("boolean")
                         .HasColumnName("is_adult");
-
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_deleted");
 
                     b.Property<string>("LocalizationLanguages")
                         .HasMaxLength(1500)

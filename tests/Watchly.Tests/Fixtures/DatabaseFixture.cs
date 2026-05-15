@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
+using Watchly.Infrastructure.DbContexts;
 
 namespace Watchly.Tests.Fixtures;
 
@@ -28,5 +30,27 @@ public class DatabaseFixture : IAsyncLifetime
         {
             await _dbContainer.DisposeAsync();
         }
+    }
+
+    public static Task ResetDatabaseAsync(WatchlyDbContext dbContext)
+    {
+        const string sql = """
+                           TRUNCATE TABLE
+                               user_content_activities,
+                               user_title_progresses,
+                               comments,
+                               votes,
+                               watch_list_items,
+                               watch_lists,
+                               refresh_tokens,
+                               password_reset_tokens,
+                               episodes,
+                               seasons,
+                               titles,
+                               asp_net_users
+                           RESTART IDENTITY CASCADE;
+                           """;
+
+        return dbContext.Database.ExecuteSqlRawAsync(sql);
     }
 }
