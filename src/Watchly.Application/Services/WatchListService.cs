@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models.Content;
@@ -219,7 +220,16 @@ public sealed class WatchListService : IWatchListService
     {
         ct.ThrowIfCancellationRequested();
         try
-        {   
+        {   if(name.IsNullOrEmpty())
+            {
+                return Result.Fail("Watch list name cannot be empty");
+            }
+
+            if(name == "Default")
+            {
+                return Result.Fail("Custom watch list name cannot be 'Default'");
+            }
+
             var newList = new WatchList
             {
                 Name = name,
