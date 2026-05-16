@@ -318,6 +318,16 @@ public sealed class WatchListService : IWatchListService
                 return Result.Fail("No such watch list");
             }
 
+            if(watchList.UserId != userId)
+            {
+                return Result.Fail("User does not own a watch list with given id");
+            }
+
+            if(watchList.Name == "Default")
+            {
+                return Result.Fail("Cannot rename default watch list");
+            }
+
             watchList.Name = newName;
             _dbContext.Update(watchList);
             await _dbContext.SaveChangesAsync(ct);
