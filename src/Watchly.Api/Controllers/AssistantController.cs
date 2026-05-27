@@ -1,10 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Watchly.Api.Dto.Comments;
-using Watchly.Api.Filters;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models.Comments;
-using Watchly.Application.Services;
 
 namespace Watchly.Api.Controllers;
 
@@ -14,11 +11,10 @@ namespace Watchly.Api.Controllers;
 public class AssistantController : BaseController<AssistantController>
 {
     private readonly IAssistantService _assistantService;
-
-    public AssistantController(IAssistantService commentService, ILogger<AssistantController> logger)
+    public AssistantController(IAssistantService assistantService, ILogger<AssistantController> logger)
         : base(logger)
     {
-        _assistantService = commentService;
+        _assistantService = assistantService;
     }
 
     [EndpointSummary("Gets relevant comments of a title.")]
