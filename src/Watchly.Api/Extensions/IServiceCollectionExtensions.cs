@@ -1,4 +1,5 @@
 using CloudinaryDotNet;
+using OpenAI.Chat;
 
 namespace Watchly.Api.Extensions;
 
@@ -34,5 +35,14 @@ public static class IServiceCollectionExtensions
             options.Configuration = connectionString;
             options.InstanceName = "WathclyC_";
         });
+    }
+    public static void RegisterOpenAi(
+       this IServiceCollection services,
+       string apiKey, string model)
+    {
+        services.AddSingleton<ChatClient>(_ =>
+            new ChatClient(
+                model: model,
+                apiKey: apiKey));
     }
 }

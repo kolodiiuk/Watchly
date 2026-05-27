@@ -109,6 +109,12 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
     .AddEntityFrameworkStores<WatchlyDbContext>()
     .AddDefaultTokenProviders();
 
+var openAiApiKey = builder.Configuration["OpenAI:ApiKey"];
+var openAiModel = builder.Configuration["OpenAI:Model"];
+
+builder.Services.RegisterOpenAi(openAiApiKey ?? throw new InvalidOperationException("OpenAI API key not configured"),
+    openAiModel ?? throw new InvalidOperationException("OpenAI model not configured"));
+
 var secret = builder.Configuration["Jwt:Secret"];
 var issuer = builder.Configuration["Jwt:Issuer"];
 var audience = builder.Configuration["Jwt:Audience"];
