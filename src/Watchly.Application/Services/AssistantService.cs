@@ -40,15 +40,16 @@ public sealed class AssistantService : IAssistantService
             var exampleJson = """
                   {
                     "Id": 1,
-                    "Highlighted": "text of <mark>highlighted</mark> comment"
+                    "Highlighted": "text of the <mark> relevant part </mark> comment"
                   }
                 """;
 
             var prompt = $"""
                 You are a text highlighting system.
 
-                Highlight ONLY fragments where users are writing about the topic:
-                "{request.Topic}"
+                Highlight ONLY fragments where users are writing something relevant to the topic:
+                "{request.Topic}". Highlight full phrases and sentences, not single words, include words 
+                that are important for the context of what is being discussed.
 
                 Wrap relevant fragments into HTML <mark> tags.
 
@@ -68,8 +69,6 @@ public sealed class AssistantService : IAssistantService
                 cancellationToken: ct);
 
             var content = response.Value.Content[0].Text;
-            Console.WriteLine("Prompt:" + prompt);  
-            Console.WriteLine("AI response:" + content);
 
             var result = JsonSerializer.Deserialize<List<CommentHighlightDto>>(
                 content,

@@ -1,10 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Watchly.Api.Dto.Comments;
-using Watchly.Api.Filters;
 using Watchly.Application.Interfaces;
 using Watchly.Application.Models.Comments;
-using Watchly.Application.Services;
 
 namespace Watchly.Api.Controllers;
 
