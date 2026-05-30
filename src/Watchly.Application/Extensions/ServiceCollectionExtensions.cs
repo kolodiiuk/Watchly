@@ -16,5 +16,6 @@ public static class ServiceCollectionExtensions
         serviceCollection.AddScoped<IVoteService, VoteService>();
         serviceCollection.AddScoped<IUserManagementService, UserManagementService>();
         serviceCollection.AddScoped<IAssistantService, AssistantService>();
+        serviceCollection.AddScoped<IDataImportService, DataImportService>();
     }
 }

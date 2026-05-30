@@ -93,6 +93,7 @@ builder.Services.RegisterCloudinary(builder.Configuration["Cloudinary:Cloud"],
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+builder.Services.Configure<DataImportOptions>(builder.Configuration.GetSection("Import"));
 
 builder.Services.AddDbContext<WatchlyDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")!));
