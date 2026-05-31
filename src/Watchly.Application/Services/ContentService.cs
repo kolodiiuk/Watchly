@@ -102,7 +102,7 @@ public class ContentService : IContentService
                     t.Actors,
                     t.LocalizationLanguages,
                     t.Votes.Any() ? (float)t.Votes.Average(v => v.Value) : 0,
-                    0,
+                    t.Votes.Count(),
                     t.TitleProductionCompanies.Select(pc => pc.ProductionCompany.Name).ToList(),
                     t.TitleGenres.Select(g => g.Genre.Name).ToList(),
                     t.Seasons.Select(s => new SeasonInfo(
