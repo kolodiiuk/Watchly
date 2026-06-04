@@ -17,5 +17,6 @@ public static class ServiceCollectionExtensions
         serviceCollection.AddScoped<IVoteService, VoteService>();
         serviceCollection.AddScoped<IWatchTrackingService, WatchTrackingService>();
         serviceCollection.AddScoped<IUserManagementService, UserManagementService>();
+        serviceCollection.AddScoped<IUserStatsService, UserStatsService>();
     }
 }

@@ -1,4 +1,3 @@
-using Watchly.Application.Models;
 using Watchly.Application.Models.Stats;
 using Watchly.Domain.Utils;
 

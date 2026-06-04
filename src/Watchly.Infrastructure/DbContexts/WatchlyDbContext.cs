@@ -53,6 +53,12 @@ public class WatchlyDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid
     public DbSet<WatchListItem> WatchListItems { get; set; }
 
     public DbSet<EpisodeWatchInfo> EpisodeWatchInfos => Set<EpisodeWatchInfo>();
+    
+    public DbSet<MovieStatsAggregateRow> MovieStatsAggregateRows => Set<MovieStatsAggregateRow>();
+    
+    public DbSet<SeriesStatsAggregateRow> SeriesStatsAggregateRows => Set<SeriesStatsAggregateRow>();
+    
+    public DbSet<GenreNameRow> GenreNameRows => Set<GenreNameRow>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -62,6 +68,9 @@ public class WatchlyDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid
         builder.ApplyConfigurationsFromAssembly(Assembly.GetAssembly(typeof(WatchlyDbContext))!);
 
         builder.Entity<EpisodeWatchInfo>().HasNoKey();
+        builder.Entity<MovieStatsAggregateRow>().HasNoKey();
+        builder.Entity<SeriesStatsAggregateRow>().HasNoKey();
+        builder.Entity<GenreNameRow>().HasNoKey();
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
