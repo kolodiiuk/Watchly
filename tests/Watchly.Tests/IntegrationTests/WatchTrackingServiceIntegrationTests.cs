@@ -98,6 +98,27 @@ public class WatchTrackingServiceIntegrationTests : IClassFixture<DatabaseFixtur
     }
 
     [Fact]
+    public async Task SetTitleWatchStatusAsync_WhenTitleExists_UpsertsStatus()
+    {
+        var result = await _sut.SetTitleWatchStatusAsync(MovieId, _userId, WatchStatus.Dropped, CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.Error);
+
+        var progress = await _dbContext.UserTitleProgresses
+            .SingleAsync(p => p.UserId == _userId && p.TitleId == MovieId);
+        Assert.Equal(WatchStatus.Dropped, progress.Status);
+    }
+
+    [Fact]
+    public async Task GetTitleWatchStatusAsync_WhenNoProgressExists_ReturnsPlanToWatch()
+    {
+        var result = await _sut.GetTitleWatchStatusAsync(MovieId, _userId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(WatchStatus.PlanToWatch, result.Value);
+    }
+
+    [Fact]
     public async Task DecrWatchingCountMovieAsync_WhenNoActivityExists_ReturnsFailureAndDoesNotWrite()
     {
         var result = await _sut.DecrWatchingCountMovieAsync(MovieId, _userId, CancellationToken.None);
@@ -191,6 +212,10 @@ public class WatchTrackingServiceIntegrationTests : IClassFixture<DatabaseFixtur
 
         Assert.Single(activities);
         Assert.Equal(1, activities[0].WatchCount);
+
+        var progress = await _dbContext.UserTitleProgresses
+            .SingleAsync(p => p.UserId == _userId && p.TitleId == TvShowId);
+        Assert.Equal(WatchStatus.Watching, progress.Status);
     }
 
     [Fact]
@@ -329,6 +354,10 @@ public class WatchTrackingServiceIntegrationTests : IClassFixture<DatabaseFixtur
             .Where(a => a.UserId == _userId && a.ContentType == ContentType.Episode && a.ContentId == Episode3Id)
             .ToListAsync();
         Assert.Empty(season2Activities);
+
+        var progress = await _dbContext.UserTitleProgresses
+            .SingleAsync(p => p.UserId == _userId && p.TitleId == TvShowId);
+        Assert.Equal(WatchStatus.Watching, progress.Status);
     }
 
     [Fact]
@@ -357,7 +386,7 @@ public class WatchTrackingServiceIntegrationTests : IClassFixture<DatabaseFixtur
     }
 
     [Fact]
-    public async Task IncrWatchingCountSeasonAsync_WhenSomeEpisodesAlreadyWatched_AddsIncrementAndBaseRecordPerEpisode()
+    public async Task IncrWatchingCountSeasonAsync_WhenSomeEpisodesAlreadyWatched_WritesOneLatestRecordPerEpisode()
     {
         await AddActivityAsync(Episode1Id, _userId, ContentType.Episode, 2, DateTime.UtcNow.AddMinutes(-30));
 
@@ -369,9 +398,8 @@ public class WatchTrackingServiceIntegrationTests : IClassFixture<DatabaseFixtur
             .Where(a => a.UserId == _userId && a.ContentType == ContentType.Episode && a.ContentId == Episode1Id)
             .OrderBy(a => a.Id)
             .ToListAsync();
-        Assert.Equal(3, episode1Activities.Count);
-        Assert.Equal(3, episode1Activities[^2].WatchCount);
-        Assert.Equal(1, episode1Activities[^1].WatchCount);
+        Assert.Equal(2, episode1Activities.Count);
+        Assert.Equal(3, episode1Activities[^1].WatchCount);
 
         var episode2Activities = await _dbContext.UserContentActivities
             .Where(a => a.UserId == _userId && a.ContentType == ContentType.Episode && a.ContentId == Episode2Id)
@@ -379,6 +407,52 @@ public class WatchTrackingServiceIntegrationTests : IClassFixture<DatabaseFixtur
             .ToListAsync();
         Assert.Single(episode2Activities);
         Assert.Equal(1, episode2Activities[0].WatchCount);
+    }
+
+    [Fact]
+    public async Task IncrWatchingCountSeasonAsync_WhenOtherUserHasHistory_IgnoresIt()
+    {
+        await AddActivityAsync(Episode1Id, _otherUserId, ContentType.Episode, 7, DateTime.UtcNow.AddMinutes(-30));
+
+        var result = await _sut.IncrWatchingCountSeasonAsync(Season1Id, _userId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.Error);
+
+        var myActivities = await _dbContext.UserContentActivities
+            .Where(a => a.UserId == _userId
+                        && a.ContentType == ContentType.Episode
+                        && (a.ContentId == Episode1Id || a.ContentId == Episode2Id))
+            .OrderBy(a => a.ContentId)
+            .ToListAsync();
+
+        Assert.Equal(2, myActivities.Count);
+        Assert.All(myActivities, activity => Assert.Equal(1, activity.WatchCount));
+    }
+
+    [Fact]
+    public async Task IncrWatchingCountSeasonAsync_WhenMultiplePriorRowsExist_UsesLatestRow()
+    {
+        await AddActivityAsync(Episode1Id, _userId, ContentType.Episode, 1, DateTime.UtcNow.AddMinutes(-30));
+        await AddActivityAsync(Episode1Id, _userId, ContentType.Episode, 3, DateTime.UtcNow.AddMinutes(-10));
+        await AddActivityAsync(Episode2Id, _userId, ContentType.Episode, 2, DateTime.UtcNow.AddMinutes(-20));
+
+        var result = await _sut.IncrWatchingCountSeasonAsync(Season1Id, _userId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.Error);
+
+        var episode1Activities = await _dbContext.UserContentActivities
+            .Where(a => a.UserId == _userId && a.ContentType == ContentType.Episode && a.ContentId == Episode1Id)
+            .OrderBy(a => a.Id)
+            .ToListAsync();
+        Assert.Equal(3, episode1Activities.Count);
+        Assert.Equal(4, episode1Activities[^1].WatchCount);
+
+        var episode2Activities = await _dbContext.UserContentActivities
+            .Where(a => a.UserId == _userId && a.ContentType == ContentType.Episode && a.ContentId == Episode2Id)
+            .OrderBy(a => a.Id)
+            .ToListAsync();
+        Assert.Equal(2, episode2Activities.Count);
+        Assert.Equal(3, episode2Activities[^1].WatchCount);
     }
 
     [Fact]
@@ -404,25 +478,47 @@ public class WatchTrackingServiceIntegrationTests : IClassFixture<DatabaseFixtur
             .ToListAsync();
         Assert.Equal(2, episode2Activities.Count);
         Assert.Equal(0, episode2Activities[^1].WatchCount);
+
+        var progress = await _dbContext.UserTitleProgresses
+            .SingleAsync(p => p.UserId == _userId && p.TitleId == TvShowId);
+        Assert.Equal(WatchStatus.Watching, progress.Status);
     }
 
     [Fact]
-    public async Task DecrWatchingCountSeasonAsync_WhenAtLeastOneEpisodeExists_ReturnsSuccessWithoutPersistingDueToEarlyReturn()
+    public async Task IncrWatchingCountSeasonAsync_WhenAllSeriesEpisodesWatched_SetsProgressCompleted()
+    {
+        await AddActivityAsync(Episode1Id, _userId, ContentType.Episode, 1, DateTime.UtcNow.AddMinutes(-30));
+        await AddActivityAsync(Episode2Id, _userId, ContentType.Episode, 1, DateTime.UtcNow.AddMinutes(-20));
+
+        var result = await _sut.IncrWatchingCountSeasonAsync(Season2Id, _userId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.Error);
+
+        var progress = await _dbContext.UserTitleProgresses
+            .SingleAsync(p => p.UserId == _userId && p.TitleId == TvShowId);
+        Assert.Equal(WatchStatus.Completed, progress.Status);
+    }
+
+    [Fact]
+    public async Task DecrWatchingCountSeasonAsync_WhenOnlySomeEpisodesHaveHistory_DecrementsWatchedEpisodesOnly()
     {
         await AddActivityAsync(Episode1Id, _userId, ContentType.Episode, 2, DateTime.UtcNow.AddMinutes(-30));
-        await AddActivityAsync(Episode2Id, _userId, ContentType.Episode, 2, DateTime.UtcNow.AddMinutes(-20));
 
         var result = await _sut.DecrWatchingCountSeasonAsync(Season1Id, _userId, CancellationToken.None);
 
         Assert.True(result.IsSuccess, result.Error);
 
-        var decrementedRows = await _dbContext.UserContentActivities
-            .Where(a => a.UserId == _userId
-                        && a.ContentType == ContentType.Episode
-                        && (a.ContentId == Episode1Id || a.ContentId == Episode2Id)
-                        && a.WatchCount == 1)
+        var episode1Activities = await _dbContext.UserContentActivities
+            .Where(a => a.UserId == _userId && a.ContentType == ContentType.Episode && a.ContentId == Episode1Id)
+            .OrderBy(a => a.Id)
             .ToListAsync();
-        Assert.Empty(decrementedRows);
+        Assert.Equal(2, episode1Activities.Count);
+        Assert.Equal(1, episode1Activities[^1].WatchCount);
+
+        var episode2Activities = await _dbContext.UserContentActivities
+            .Where(a => a.UserId == _userId && a.ContentType == ContentType.Episode && a.ContentId == Episode2Id)
+            .ToListAsync();
+        Assert.Empty(episode2Activities);
     }
 
     [Fact]

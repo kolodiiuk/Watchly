@@ -1,4 +1,3 @@
-using System.Collections.Frozen;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Watchly.Application.Interfaces;
@@ -6,12 +5,9 @@ using Watchly.Domain.Entities;
 using Watchly.Domain.Enums;
 using Watchly.Domain.Utils;
 using Watchly.Infrastructure.DbContexts;
-using Watchly.Infrastructure.Models;
 
 namespace Watchly.Application.Services;
 
-//todo: update user title progress
-// todo: fix incr and decr season
 public class WatchTrackingService : IWatchTrackingService
 {
     private readonly WatchlyDbContext _dbContext;
@@ -51,14 +47,8 @@ public class WatchTrackingService : IWatchTrackingService
                     WatchedAt = DateTime.UtcNow,
                     WatchCount = 1
                 };
-                var newTitleProgress = new UserTitleProgress
-                {
-                    TitleId = id,
-                    UserId = userId,
-                    Status = WatchStatus.Completed
-                };
                 _dbContext.Add(newActivity);
-                _dbContext.Add(newTitleProgress);
+                await UpsertTitleProgressAsync(id, userId, WatchStatus.Completed, ct);
                 await _dbContext.SaveChangesAsync(ct);
 
                 return Result.Success();
@@ -74,6 +64,7 @@ public class WatchTrackingService : IWatchTrackingService
                 WatchCount = existingActivity.WatchCount + 1
             };
             _dbContext.Add(newActivityR);
+            await UpsertTitleProgressAsync(id, userId, WatchStatus.Completed, ct);
             await _dbContext.SaveChangesAsync(ct);
 
             return Result.Success();
@@ -92,57 +83,56 @@ public class WatchTrackingService : IWatchTrackingService
         }
     }
 
-    // done
     public async Task<Result> IncrWatchingCountSeasonAsync(int seasonId, Guid userId, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
         try
         {
-            var episodeIds = await _dbContext.Episodes
-                .Where(e => e.SeasonId == seasonId)
-                .Select(e => e.Id)
-                .ToListAsync(ct);
-
-            var activities = await _dbContext.UserContentActivities
-                .Where(uca => uca.ContentType == ContentType.Episode
-                              && episodeIds.Contains(uca.ContentId)
-                              && uca.ActivityType == ActivityType.Watched)
-                .ToListAsync(ct);
-            var alreadyWatchedSet = activities.Select(uca => uca.ContentId).ToFrozenSet();
-            var activityDictionary = activities.ToFrozenDictionary(uca => uca.ContentId);
-            foreach (var episodeId in episodeIds)
-            {
-                if (alreadyWatchedSet.Contains(episodeId))
+            var seasonInfo = await _dbContext.Seasons
+                .Where(s => s.Id == seasonId)
+                .Select(s => new
                 {
-                    var exists = activityDictionary.TryGetValue(episodeId, out var activity);
-                    if (!exists)
-                    {
-                        return Result.Fail("Issue");
-                    }
+                    s.TitleId,
+                    EpisodeIds = s.Episodes.Select(e => e.Id).ToList()
+                })
+                .FirstOrDefaultAsync(ct);
 
-                    var newActivityR = new UserContentActivity
-                    {
-                        ContentId = episodeId,
-                        ActivityType = ActivityType.Watched,
-                        ContentType = ContentType.Episode,
-                        UserId = userId,
-                        WatchCount = activity.WatchCount + 1,
-                        WatchedAt = DateTime.UtcNow
-                    };
-                    _dbContext.Add(newActivityR);
-                }
+            if (seasonInfo == null)
+            {
+                return Result.Fail("Season doesn't exist");
+            }
 
-                var newActivity = new UserContentActivity
+            if (seasonInfo.EpisodeIds.Count == 0)
+            {
+                return Result.Fail("Season has no episodes");
+            }
+
+            var latestActivities = await GetLatestWatchedActivitiesByContentIdAsync(
+                seasonInfo.EpisodeIds,
+                userId,
+                ContentType.Episode,
+                ct);
+            var now = DateTime.UtcNow;
+
+            foreach (var episodeId in seasonInfo.EpisodeIds)
+            {
+                var nextWatchCount = latestActivities.TryGetValue(episodeId, out var activity)
+                    ? activity.WatchCount + 1
+                    : 1;
+
+                _dbContext.Add(new UserContentActivity
                 {
                     ContentId = episodeId,
                     ActivityType = ActivityType.Watched,
                     ContentType = ContentType.Episode,
                     UserId = userId,
-                    WatchCount = 1,
-                    WatchedAt = DateTime.UtcNow
-                };
-                _dbContext.Add(newActivity);
+                    WatchCount = nextWatchCount,
+                    WatchedAt = now
+                });
             }
 
+            await _dbContext.SaveChangesAsync(ct);
+            await UpdateSeriesProgressAsync(seasonInfo.TitleId, userId, ct);
             await _dbContext.SaveChangesAsync(ct);
 
             return Result.Success();
@@ -166,17 +156,22 @@ public class WatchTrackingService : IWatchTrackingService
         ct.ThrowIfCancellationRequested();
         try
         {
-            var doesEpisodeExists = await _dbContext.Episodes.AnyAsync(e => e.Id == id, ct);
-            if (!doesEpisodeExists)
+            var episodeInfo = await _dbContext.Episodes
+                .Where(e => e.Id == id)
+                .Select(e => new { e.TvShowId })
+                .FirstOrDefaultAsync(ct);
+            if (episodeInfo == null)
             {
                 return Result.Fail("No episode with such id");
             }
 
             var existingActivity = await _dbContext.UserContentActivities
-                .Where(uca => uca.ContentId == id)
-                .Where(uca => uca.UserId == userId)
-                .Where(uca => uca.ActivityType == ActivityType.Watched)
-                .OrderByDescending(uca => uca.Id)
+                .Where(uca => uca.ContentId == id
+                              && uca.ContentType == ContentType.Episode
+                              && uca.UserId == userId
+                              && uca.ActivityType == ActivityType.Watched)
+                .OrderByDescending(uca => uca.WatchedAt)
+                .ThenByDescending(uca => uca.Id)
                 .FirstOrDefaultAsync(ct);
             if (existingActivity == null)
             {
@@ -190,6 +185,8 @@ public class WatchTrackingService : IWatchTrackingService
                     WatchedAt = DateTime.UtcNow
                 };
                 _dbContext.Add(newUCA);
+                await _dbContext.SaveChangesAsync(ct);
+                await UpdateSeriesProgressAsync(episodeInfo.TvShowId, userId, ct);
                 await _dbContext.SaveChangesAsync(ct);
 
                 return Result.Success();
@@ -205,6 +202,8 @@ public class WatchTrackingService : IWatchTrackingService
                 WatchedAt = DateTime.UtcNow
             };
             _dbContext.Add(newRewatch);
+            await _dbContext.SaveChangesAsync(ct);
+            await UpdateSeriesProgressAsync(episodeInfo.TvShowId, userId, ct);
             await _dbContext.SaveChangesAsync(ct);
 
             return Result.Success();
@@ -238,9 +237,10 @@ public class WatchTrackingService : IWatchTrackingService
             var existingActivity = await _dbContext.UserContentActivities
                 .Where(activity => activity.ContentId == id
                                    && activity.UserId == userId
+                                   && activity.ContentType == ContentType.Movie
                                    && activity.ActivityType == ActivityType.Watched)
                 .OrderByDescending(a => a.WatchedAt)
-                .Take(1)
+                .ThenByDescending(a => a.Id)
                 .FirstOrDefaultAsync(ct);
             if (existingActivity == null)
             {
@@ -253,10 +253,7 @@ public class WatchTrackingService : IWatchTrackingService
                     return Result.Fail("Already unwatched");
                 case 1:
                 {
-                    var titleProgress = await _dbContext.UserTitleProgresses
-                        .Where(utp => utp.UserId == userId && utp.TitleId == id)
-                        .FirstOrDefaultAsync(ct);
-                    titleProgress.Status = WatchStatus.NotWatched;
+                    await UpsertTitleProgressAsync(id, userId, WatchStatus.NotWatched, ct);
                     var newActivityUnwatched = new UserContentActivity
                     {
                         ContentType = ContentType.Movie,
@@ -281,6 +278,7 @@ public class WatchTrackingService : IWatchTrackingService
                         WatchCount = existingActivity.WatchCount - 1
                     };
                     _dbContext.Add(newActivityRU);
+                    await UpsertTitleProgressAsync(id, userId, WatchStatus.Completed, ct);
                     break;
                 }
             }
@@ -305,103 +303,59 @@ public class WatchTrackingService : IWatchTrackingService
 
     public async Task<Result> DecrWatchingCountSeasonAsync(int seasonId, Guid userId, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
         try
         {
-            FormattableString sql = $"""
-                                     ;WITH episode_ids AS (
-                                        SELECT
-                                            id
-                                        FROM
-                                            episodes
-                                        WHERE
-                                            episodes.season_id = {seasonId}
-                                     ), activities AS (
-                                        SELECT
-                                            DENSE_RANK() OVER (
-                                                PARTITION BY uca.content_id
-                                                ORDER BY uca.watched_at) AS rank,
-                                            uca.*
-                                        FROM
-                                            user_content_activities uca
-                                        WHERE
-                                            uca.user_id = {userId} 
-                                            AND uca.activity_type = 1 
-                                            AND uca.content_id IN (SELECT * FROM episode_ids)
-                                     )
-                                     SELECT
-                                        a.id,
-                                        a.content_id,
-                                        a.user_id,
-                                        a.content_type,
-                                        a.activity_type,
-                                        a.watched_at,
-                                        a.watch_count
-                                     FROM 
-                                        activities a
-                                     WHERE
-                                        a.rank = 1
-                                     """;
+            var seasonInfo = await _dbContext.Seasons
+                .Where(s => s.Id == seasonId)
+                .Select(s => new
+                {
+                    s.TitleId,
+                    EpisodeIds = s.Episodes.Select(e => e.Id).ToList()
+                })
+                .FirstOrDefaultAsync(ct);
 
-            var episodeIds = await _dbContext.Episodes
-                .Where(e => e.SeasonId == seasonId)
-                .Select(e => e.Id)
-                .ToListAsync(ct);
-            var activities = await _dbContext.UserContentActivities.FromSql(sql).ToListAsync(ct);
-            var activityDictionary = activities.ToFrozenDictionary(uca => uca.ContentId);
-            if (activityDictionary.Count == 0)
+            if (seasonInfo == null)
             {
-                return Result.Fail("No Watched activities");
+                return Result.Fail("Season doesn't exist");
             }
 
-
-            foreach (var episodeId in episodeIds)
+            if (seasonInfo.EpisodeIds.Count == 0)
             {
-                if (!activityDictionary.ContainsKey(episodeId))
-                {
-                    return Result.Success();
-                }
-
-                var exists = activityDictionary.TryGetValue(episodeId, out var activity);
-                if (!exists)
-                {
-                    return Result.Fail("Issue");
-                }
-
-                switch (activity.WatchCount)
-                {
-                    case 0:
-                        continue;
-                    case 1:
-                    {
-                        var newActivityU = new UserContentActivity
-                        {
-                            ContentId = episodeId,
-                            ActivityType = ActivityType.Watched,
-                            ContentType = ContentType.Episode,
-                            UserId = userId,
-                            WatchCount = 0,
-                            WatchedAt = DateTime.UtcNow
-                        };
-                        _dbContext.Add(newActivityU);
-                        break;
-                    }
-                    default:
-                    {
-                        var newActivity = new UserContentActivity
-                        {
-                            ContentId = episodeId,
-                            ActivityType = ActivityType.Watched,
-                            ContentType = ContentType.Episode,
-                            UserId = userId,
-                            WatchCount = activity.WatchCount - 1,
-                            WatchedAt = DateTime.UtcNow
-                        };
-                        _dbContext.Add(newActivity);
-                        break;
-                    }
-                }
+                return Result.Fail("Season has no episodes");
             }
 
+            var latestActivities = await GetLatestWatchedActivitiesByContentIdAsync(
+                seasonInfo.EpisodeIds,
+                userId,
+                ContentType.Episode,
+                ct);
+
+            var watchedActivities = latestActivities
+                .Where(pair => pair.Value.WatchCount > 0)
+                .ToList();
+
+            if (watchedActivities.Count == 0)
+            {
+                return Result.Fail("No watched activities");
+            }
+
+            var now = DateTime.UtcNow;
+            foreach (var (episodeId, activity) in watchedActivities)
+            {
+                _dbContext.Add(new UserContentActivity
+                {
+                    ContentId = episodeId,
+                    ActivityType = ActivityType.Watched,
+                    ContentType = ContentType.Episode,
+                    UserId = userId,
+                    WatchCount = activity.WatchCount - 1,
+                    WatchedAt = now
+                });
+            }
+
+            await _dbContext.SaveChangesAsync(ct);
+            await UpdateSeriesProgressAsync(seasonInfo.TitleId, userId, ct);
             await _dbContext.SaveChangesAsync(ct);
 
             return Result.Success();
@@ -425,16 +379,22 @@ public class WatchTrackingService : IWatchTrackingService
         ct.ThrowIfCancellationRequested();
         try
         {
-            var doesEpisodeExists = await _dbContext.Episodes.AnyAsync(e => e.Id == id, ct);
-            if (!doesEpisodeExists)
+            var episodeInfo = await _dbContext.Episodes
+                .Where(e => e.Id == id)
+                .Select(e => new { e.TvShowId })
+                .FirstOrDefaultAsync(ct);
+            if (episodeInfo == null)
             {
                 return Result.Fail("No such episode");
             }
 
             var existingUCA = await _dbContext.UserContentActivities
                 .Where(uca => uca.ContentId == id
+                              && uca.ContentType == ContentType.Episode
                               && uca.ActivityType == ActivityType.Watched
                               && uca.UserId == userId)
+                .OrderByDescending(uca => uca.WatchedAt)
+                .ThenByDescending(uca => uca.Id)
                 .FirstOrDefaultAsync(ct);
 
             if (existingUCA == null)
@@ -477,6 +437,8 @@ public class WatchTrackingService : IWatchTrackingService
             }
 
             await _dbContext.SaveChangesAsync(ct);
+            await UpdateSeriesProgressAsync(episodeInfo.TvShowId, userId, ct);
+            await _dbContext.SaveChangesAsync(ct);
 
             return Result.Success();
         }
@@ -513,13 +475,13 @@ public class WatchTrackingService : IWatchTrackingService
                               SELECT 
                                   uca.watch_count as "count", 
                                   uca.content_id as "episode_id",
-                                  DENSE_RANK() OVER (
+                                  ROW_NUMBER() OVER (
                                     PARTITION BY uca.content_id
-                                    ORDER BY uca.watched_at DESC) rank
+                                    ORDER BY uca.watched_at DESC, uca.id DESC) rank
                               FROM 
                                   user_content_activities uca
                               WHERE
-                                  uca.user_id = {userId} AND uca.activity_type = 1 AND uca.content_id IN (SELECT * FROM episode_ids)
+                                  uca.user_id = {userId} AND uca.activity_type = 1 AND uca.content_type = 1 AND uca.content_id IN (SELECT * FROM episode_ids)
                           )
                           SELECT
                                 a.count,
@@ -558,8 +520,12 @@ public class WatchTrackingService : IWatchTrackingService
         try
         {
             var count = await _dbContext.UserContentActivities
-                .Where(uca => uca.ContentId == id && uca.UserId == userId)
+                .Where(uca => uca.ContentId == id
+                              && uca.UserId == userId
+                              && uca.ContentType == ContentType.Movie
+                              && uca.ActivityType == ActivityType.Watched)
                 .OrderByDescending(uca => uca.WatchedAt)
+                .ThenByDescending(uca => uca.Id)
                 .Select(uca => uca.WatchCount)
                 .FirstOrDefaultAsync(ct);
 
@@ -586,8 +552,12 @@ public class WatchTrackingService : IWatchTrackingService
         try
         {
             var count = await _dbContext.UserContentActivities
-                .Where(uca => uca.ContentId == episodeId && uca.UserId == userId)
+                .Where(uca => uca.ContentId == episodeId
+                              && uca.UserId == userId
+                              && uca.ContentType == ContentType.Episode
+                              && uca.ActivityType == ActivityType.Watched)
                 .OrderByDescending(uca => uca.WatchedAt)
+                .ThenByDescending(uca => uca.Id)
                 .Select(uca => uca.WatchCount)
                 .FirstOrDefaultAsync(ct);
 
@@ -605,5 +575,151 @@ public class WatchTrackingService : IWatchTrackingService
         {
             return Result<int>.Fail($"Error: {e.Message}");
         }
+    }
+
+    public async Task<Result<WatchStatus>> GetTitleWatchStatusAsync(int titleId, Guid userId, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        try
+        {
+            var titleExists = await _dbContext.Titles.AnyAsync(t => t.Id == titleId, ct);
+            if (!titleExists)
+            {
+                return Result<WatchStatus>.Fail("Title doesn't exist");
+            }
+
+            var status = await _dbContext.UserTitleProgresses
+                .Where(progress => progress.TitleId == titleId && progress.UserId == userId)
+                .Select(progress => progress.Status)
+                .FirstOrDefaultAsync(ct);
+
+            return Result<WatchStatus>.Success(status);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (NpgsqlException e)
+        {
+            return Result<WatchStatus>.Fail($"DB error: {e.Message}");
+        }
+        catch (Exception e)
+        {
+            return Result<WatchStatus>.Fail($"Error: {e.Message}");
+        }
+    }
+
+    public async Task<Result> SetTitleWatchStatusAsync(
+        int titleId,
+        Guid userId,
+        WatchStatus status,
+        CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        try
+        {
+            var titleExists = await _dbContext.Titles.AnyAsync(t => t.Id == titleId, ct);
+            if (!titleExists)
+            {
+                return Result.Fail("Title doesn't exist");
+            }
+
+            await UpsertTitleProgressAsync(titleId, userId, status, ct);
+            await _dbContext.SaveChangesAsync(ct);
+
+            return Result.Success();
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (NpgsqlException e)
+        {
+            return Result.Fail($"DB error: {e.Message}");
+        }
+        catch (Exception e)
+        {
+            return Result.Fail($"Error: {e.Message}");
+        }
+    }
+
+    private async Task<Dictionary<int, UserContentActivity>> GetLatestWatchedActivitiesByContentIdAsync(
+        IEnumerable<int> contentIds,
+        Guid userId,
+        ContentType contentType,
+        CancellationToken ct)
+    {
+        var ids = contentIds.Distinct().ToArray();
+        if (ids.Length == 0)
+        {
+            return new Dictionary<int, UserContentActivity>();
+        }
+
+        var activities = await _dbContext.UserContentActivities
+            .Where(uca => uca.UserId == userId
+                          && uca.ContentType == contentType
+                          && uca.ActivityType == ActivityType.Watched
+                          && ids.Contains(uca.ContentId))
+            .OrderByDescending(uca => uca.WatchedAt)
+            .ThenByDescending(uca => uca.Id)
+            .ToListAsync(ct);
+
+        return activities
+            .GroupBy(uca => uca.ContentId)
+            .ToDictionary(group => group.Key, group => group.First());
+    }
+
+    private async Task UpsertTitleProgressAsync(
+        int titleId,
+        Guid userId,
+        WatchStatus status,
+        CancellationToken ct)
+    {
+        var progress = await _dbContext.UserTitleProgresses
+            .FirstOrDefaultAsync(utp => utp.UserId == userId && utp.TitleId == titleId, ct);
+
+        if (progress == null)
+        {
+            _dbContext.UserTitleProgresses.Add(new UserTitleProgress
+            {
+                TitleId = titleId,
+                UserId = userId,
+                Status = status
+            });
+
+            return;
+        }
+
+        progress.Status = status;
+    }
+
+    private async Task UpdateSeriesProgressAsync(int tvShowId, Guid userId, CancellationToken ct)
+    {
+        var episodeIds = await _dbContext.Episodes
+            .Where(e => e.TvShowId == tvShowId)
+            .Select(e => e.Id)
+            .ToListAsync(ct);
+
+        if (episodeIds.Count == 0)
+        {
+            await UpsertTitleProgressAsync(tvShowId, userId, WatchStatus.NotWatched, ct);
+            return;
+        }
+
+        var latestActivities = await GetLatestWatchedActivitiesByContentIdAsync(
+            episodeIds,
+            userId,
+            ContentType.Episode,
+            ct);
+        var watchedEpisodeCount = episodeIds.Count(episodeId =>
+            latestActivities.TryGetValue(episodeId, out var activity) && activity.WatchCount > 0);
+        var status = watchedEpisodeCount switch
+        {
+            0 => WatchStatus.NotWatched,
+            var count when count == episodeIds.Count => WatchStatus.Completed,
+            _ => WatchStatus.Watching
+        };
+
+        await UpsertTitleProgressAsync(tvShowId, userId, status, ct);
     }
 }

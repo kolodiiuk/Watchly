@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Watchly.Api.Dto.WatchTracking;
 using Watchly.Application.Interfaces;
+using Watchly.Domain.Enums;
 
 namespace Watchly.Api.Controllers;
 
@@ -47,7 +49,7 @@ public class WatchTrackingController : BaseController<WatchTrackingController>
         return NoContent();
     }
 
-    [HttpPost("episode/incr/{episodeId}")]
+    [HttpPost("episode/incr/{episodeId:int}")]
     [Authorize]
     public async Task<IActionResult> IncrWatchCountEpisodeAsync(int episodeId, CancellationToken ct)
     {
@@ -92,7 +94,7 @@ public class WatchTrackingController : BaseController<WatchTrackingController>
         return NoContent();
     }
 
-    [HttpPost("episode/decr/{episodeId}")]
+    [HttpPost("episode/decr/{episodeId:int}")]
     [Authorize]
     public async Task<IActionResult> DecrWatchCountEpisodeAsync(int episodeId, CancellationToken ct)
     {
@@ -122,7 +124,7 @@ public class WatchTrackingController : BaseController<WatchTrackingController>
         return Ok(res.Value);
     }
 
-    [HttpGet("episode/{movieId:int}")]
+    [HttpGet("episode/{episodeId:int}")]
     [Authorize]
     public async Task<ActionResult<int>> GetEpisodeWatchCountAsync(int episodeId, CancellationToken ct)
     {
@@ -150,5 +152,43 @@ public class WatchTrackingController : BaseController<WatchTrackingController>
         }
 
         return Ok(res.Value);
+    }
+
+    [HttpGet("title/{titleId:int}/status")]
+    [Authorize]
+    public async Task<ActionResult<WatchStatus>> GetTitleWatchStatusAsync(int titleId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        var res = await _watchTrackingService.GetTitleWatchStatusAsync(titleId, UserId, ct);
+        if (res.Failure)
+        {
+            return Problem();
+        }
+
+        return Ok(res.Value);
+    }
+
+    [HttpPut("title/{titleId:int}/status")]
+    [Authorize]
+    public async Task<IActionResult> SetTitleWatchStatusAsync(
+        int titleId,
+        [FromBody] SetTitleWatchStatusRequest request,
+        CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        if (!Enum.IsDefined(request.Status))
+        {
+            return BadRequest("Invalid watch status.");
+        }
+
+        var res = await _watchTrackingService.SetTitleWatchStatusAsync(titleId, UserId, request.Status, ct);
+        if (res.Failure)
+        {
+            return Problem();
+        }
+
+        return NoContent();
     }
 }
