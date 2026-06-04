@@ -48,7 +48,7 @@ public sealed class AdminContentController : BaseController<AdminContentControll
     }
 
     [HttpPost("titles/{titleId:int}/poster")]
-    public async Task<IActionResult> UploadPosterAsync(int titleId, [FromForm] IFormFile poster,
+    public async Task<IActionResult> UploadPosterAsync(int titleId, IFormFile poster,
         CancellationToken ct = default)
     {
         if (poster.Length == 0)
