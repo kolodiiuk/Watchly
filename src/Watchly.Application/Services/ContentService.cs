@@ -192,7 +192,7 @@ public class ContentService : IContentService
                 .OrderBy(t => t.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating))
+                .Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating, t.ReleaseDate, t.ContentType))
                 .AsNoTracking();
 
             return Result<IEnumerable<TitleShortInfo>>.Success(await query.ToListAsync(ct));
@@ -219,7 +219,7 @@ public class ContentService : IContentService
             var tsi = query
                 .Skip((filterOptions.Page - 1) * filterOptions.Size)
                 .Take(filterOptions.Size)
-                .Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating))
+                .Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating, t.ReleaseDate, t.ContentType))
                 .AsNoTracking();
             var results = await tsi.ToListAsync(ct);
 

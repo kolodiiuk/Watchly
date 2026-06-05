@@ -1,3 +1,12 @@
 namespace Watchly.Application.Models.Content;
 
-public record TitleShortInfo(int Id, string Name, string PosterUrl, float? AvgTmdbRating);
+using Watchly.Domain.Enums;
+
+public record TitleShortInfo(
+    int Id,
+    string Name,
+    string PosterUrl,
+    float? AvgTmdbRating,
+    DateTime? ReleaseDate,
+    TitleType TitleType
+);
