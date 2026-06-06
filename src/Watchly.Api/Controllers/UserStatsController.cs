@@ -22,9 +22,10 @@ public sealed class UserStatsController : BaseController<UserStatsController>
     [EndpointSummary("Gets movie stats.")]
     [EndpointDescription("Retrieves movie watching statistics for the user.")]
     [ProducesResponseType(typeof(MovieStatsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [HttpGet("movie")]
     public async Task<ActionResult<MovieStatsResponse>> GetMovieStatsAsync(CancellationToken ct)
     {
@@ -40,7 +41,7 @@ public sealed class UserStatsController : BaseController<UserStatsController>
             return Problem(
                 title: "Get movie stats failed",
                 detail: res.Error,
-                statusCode: StatusCodes.Status404NotFound);
+                statusCode: StatusCodes.Status500InternalServerError);
         }
 
         return StatusCode(StatusCodes.Status200OK, res.Value);
@@ -50,9 +51,10 @@ public sealed class UserStatsController : BaseController<UserStatsController>
     [EndpointSummary("Gets series stats.")]
     [EndpointDescription("Retrieves series watching statistics for the user.")]
     [ProducesResponseType(typeof(SeriesStatsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [HttpGet("series")]
     public async Task<ActionResult<SeriesStatsResponse>> GetSeriesStatsAsync(CancellationToken ct)
     {
@@ -68,7 +70,7 @@ public sealed class UserStatsController : BaseController<UserStatsController>
             return Problem(
                 title: "Get series stats failed",
                 detail: res.Error,
-                statusCode: StatusCodes.Status404NotFound);
+                statusCode: StatusCodes.Status500InternalServerError);
         }
 
         return StatusCode(StatusCodes.Status200OK, res.Value);

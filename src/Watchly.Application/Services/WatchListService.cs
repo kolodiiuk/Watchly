@@ -371,7 +371,9 @@ public sealed class WatchListService : IWatchListService
                     i.Title.Id,
                     i.Title.Name,
                     i.Title.PosterUrl,
-                    i.Title.AvgTmdbRating))
+                    i.Title.AvgTmdbRating,
+                    i.Title.ReleaseDate,
+                    i.Title.ContentType))
                 .ToListAsync(ct);
 
             return Result<IEnumerable<TitleShortInfo>>.Success(titles);
@@ -395,6 +397,8 @@ public sealed class WatchListService : IWatchListService
         ct.ThrowIfCancellationRequested();
         try
         {
+            _ = GetUserDefaultWatchListId(userId);
+
             var watchLists = await _dbContext.WatchLists
                 .Where(w => w.UserId == userId)
                 .Select(w => new WatchListInfo(
@@ -404,7 +408,9 @@ public sealed class WatchListService : IWatchListService
                         i.Title.Id,
                         i.Title.Name,
                         i.Title.PosterUrl,
-                        i.Title.AvgTmdbRating)
+                        i.Title.AvgTmdbRating,
+                        i.Title.ReleaseDate,
+                        i.Title.ContentType)
                     ))
                 ).ToListAsync(ct);
 
@@ -484,4 +490,3 @@ public sealed class WatchListService : IWatchListService
         return watchList is not null && watchList.UserId == userId;
     }
 }
-

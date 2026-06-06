@@ -245,6 +245,12 @@ namespace Watchly.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -272,6 +278,10 @@ namespace Watchly.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("season_id");
 
+                    b.Property<int>("TvShowId")
+                        .HasColumnType("integer")
+                        .HasColumnName("tv_show_id");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -281,6 +291,9 @@ namespace Watchly.Infrastructure.Migrations
 
                     b.HasIndex("SeasonId")
                         .HasDatabaseName("ix_episodes_season_id");
+
+                    b.HasIndex("TvShowId")
+                        .HasDatabaseName("ix_episodes_tv_show_id");
 
                     b.ToTable("episodes");
                 });
@@ -564,6 +577,12 @@ namespace Watchly.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_adult");
 
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
                     b.Property<string>("LocalizationLanguages")
                         .HasMaxLength(1500)
                         .HasColumnType("character varying(1500)")
@@ -823,6 +842,10 @@ namespace Watchly.Infrastructure.Migrations
                     b.Property<Guid?>("UserId")
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
+
+                    b.Property<int>("WatchCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("watch_count");
 
                     b.Property<DateTime>("WatchedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1127,7 +1150,16 @@ namespace Watchly.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_episodes_seasons_season_id");
 
+                    b.HasOne("Watchly.Domain.Entities.TvShow", "TvShow")
+                        .WithMany("Episodes")
+                        .HasForeignKey("TvShowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_episodes_titles_tv_show_id");
+
                     b.Navigation("Season");
+
+                    b.Navigation("TvShow");
                 });
 
             modelBuilder.Entity("Watchly.Domain.Entities.KeywordTitle", b =>
@@ -1404,6 +1436,11 @@ namespace Watchly.Infrastructure.Migrations
             modelBuilder.Entity("Watchly.Domain.Entities.WatchList", b =>
                 {
                     b.Navigation("WatchListItems");
+                });
+
+            modelBuilder.Entity("Watchly.Domain.Entities.TvShow", b =>
+                {
+                    b.Navigation("Episodes");
                 });
 #pragma warning restore 612, 618
         }

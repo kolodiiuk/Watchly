@@ -1,5 +1,7 @@
 using Npgsql;
+using Microsoft.EntityFrameworkCore;
 using Watchly.Application.Interfaces;
+using Watchly.Application.Models.Votes;
 using Watchly.Domain.Entities;
 using Watchly.Domain.Utils;
 using Watchly.Infrastructure.DbContexts;
@@ -64,6 +66,44 @@ public sealed class VoteService : IVoteService
         catch (Exception e)
         {
             return Result.Fail($"{e.Message}");
+        }
+    }
+
+    public Task<Result<UserVote>> GetTitleVoteAsync(int titleId, Guid userId, CancellationToken ct)
+    {
+        return GetVoteAsync(titleId, userId, true, ct);
+    }
+
+    public Task<Result<UserVote>> GetEpisodeVoteAsync(int episodeId, Guid userId, CancellationToken ct)
+    {
+        return GetVoteAsync(episodeId, userId, false, ct);
+    }
+
+    private async Task<Result<UserVote>> GetVoteAsync(int principalId, Guid userId, bool isTitle, CancellationToken ct)
+    {
+        try
+        {
+            var vote = await _dbContext.Votes
+                .AsNoTracking()
+                .Where(v => v.UserId == userId)
+                .Where(v => isTitle ? v.TitleId == principalId : v.EpisodeId == principalId)
+                .OrderByDescending(v => v.UpdatedAt)
+                .Select(v => new UserVote(v.Id, v.Value))
+                .FirstOrDefaultAsync(ct);
+
+            return Result<UserVote>.Success(vote);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (NpgsqlException e)
+        {
+            return Result<UserVote>.Fail($"DB problems: {e.Message}");
+        }
+        catch (Exception e)
+        {
+            return Result<UserVote>.Fail(e.Message);
         }
     }
 

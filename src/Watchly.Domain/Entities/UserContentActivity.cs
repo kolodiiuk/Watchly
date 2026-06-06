@@ -10,6 +10,8 @@ public sealed class UserContentActivity
 
     public Guid? UserId { get; set; }
 
+    public int WatchCount { get; set; }
+
     public ContentType ContentType { get; set; }
 
     public ActivityType ActivityType { get; set; }

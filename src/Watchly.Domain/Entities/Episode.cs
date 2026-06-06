@@ -6,12 +6,16 @@ public sealed class Episode
 
     public int SeasonId { get; set; }
 
+    public int TvShowId { get; set; }
+
     public int OrdinalNumber { get; set; }
 
     /// <summary>
     /// In minutes
     /// </summary>
     public int Runtime { get; set; }
+
+    public bool IsDeleted { get; set; }
 
     public string Name { get; set; }
 
@@ -22,6 +26,8 @@ public sealed class Episode
     public DateTime UpdatedAt { get; set; }
 
     public Season Season { get; set; }
+
+    public TvShow TvShow { get; set; }
 
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 

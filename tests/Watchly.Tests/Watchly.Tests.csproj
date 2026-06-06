@@ -33,6 +33,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Watchly.Application\Watchly.Application.csproj" />
+      <ProjectReference Include="..\..\src\Watchly.Api\Watchly.Api.csproj" />
       <ProjectReference Include="..\..\src\Watchly.Domain\Watchly.Domain.csproj" />
       <ProjectReference Include="..\..\src\Watchly.Infrastructure\Watchly.Infrastructure.csproj" />
     </ItemGroup>

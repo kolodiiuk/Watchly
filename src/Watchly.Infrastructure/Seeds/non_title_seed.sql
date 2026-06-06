@@ -3,7 +3,7 @@ BEGIN;
 -- Insert roles
 INSERT INTO asp_net_roles (id, concurrency_stamp, name, normalized_name)
 VALUES
-  ('a1111111-1111-1111-1111-111111111111', gen_random_uuid()::text, 'Administrator', 'ADMINISTRATOR'),
+  ('a1111111-1111-1111-1111-111111111111', gen_random_uuid()::text, 'Admin', 'ADMIN'),
   ('b2222222-2222-2222-2222-222222222222', gen_random_uuid()::text, 'User', 'USER');
 
 -- Insert users
@@ -56,7 +56,7 @@ VALUES
 -- Link users to roles
 INSERT INTO asp_net_user_roles (user_id, role_id)
 VALUES
-  ('2b8f1a9c-1d3e-4f4d-9b2c-0a1b2c3d4e5f', 'a1111111-1111-1111-1111-111111111111'), -- alice -> Administrator
+  ('2b8f1a9c-1d3e-4f4d-9b2c-0a1b2c3d4e5f', 'a1111111-1111-1111-1111-111111111111'), -- alice -> Admin
   ('3c9f2b0d-2e4f-5a6b-8c3d-1b2c3d4e5f60', 'b2222222-2222-2222-2222-222222222222'); -- bob -> User
 
 -- Insert refresh tokens (token must be unique)

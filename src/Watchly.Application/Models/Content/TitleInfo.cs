@@ -22,5 +22,8 @@ public record TitleInfo(
     IEnumerable<string> ProductionCompanies,
     IEnumerable<string> Genres,
     IEnumerable<SeasonInfo> Seasons,
-    IEnumerable<string> SpokenLanguages
+    IEnumerable<string> SpokenLanguages,
+    IEnumerable<int> GenreIds,
+    IEnumerable<int> ProductionCompanyIds,
+    IEnumerable<int> SpokenLanguageIds
     );
