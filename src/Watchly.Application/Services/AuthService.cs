@@ -76,13 +76,13 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             return Result<SignInResponse>.Fail("User credentials validation failure");
         }
 
-        var tokensRes = await GenerateTokensAsync(validationResult.Value, ipAddress, ct);
+        var userRoles = await _userManager.GetRolesAsync(validationResult.Value);
+
+        var tokensRes = await GenerateTokensAsync(validationResult.Value, userRoles, ipAddress, ct);
         if (tokensRes.Failure)
         {
             return Result<SignInResponse>.Fail(tokensRes.Error);
         }
-
-        var userRoles = await _userManager.GetRolesAsync(validationResult.Value);
         
         var response = CreateSignInResponse(tokensRes.Value, email,
             validationResult.Value.UserName, validationResult.Value.Id, userRoles);
@@ -130,7 +130,8 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             return Result<RefreshTokenResponse>.Fail("Token expired");
         }
 
-        var newToken = _jwtService.GenerateToken(storedRefreshToken.User);
+        var roles = await _userManager.GetRolesAsync(user);
+        var newToken = _jwtService.GenerateToken(storedRefreshToken.User, roles);
         var newRefreshToken = _jwtService.GenerateRefreshToken();
         storedRefreshToken.Revoked = DateTime.UtcNow;
         storedRefreshToken.RevokedByIp = ipAddress;
@@ -152,7 +153,6 @@ public class AuthService : LoggingService<AuthService>, IAuthService
             return Result<RefreshTokenResponse>.Fail(addTokenRes.Error);
         }
 
-        var roles = await _userManager.GetRolesAsync(user);
         var role = roles.FirstOrDefault();
 
         return Result<RefreshTokenResponse>.Success(new RefreshTokenResponse
@@ -216,7 +216,7 @@ public class AuthService : LoggingService<AuthService>, IAuthService
     }
 
     private async Task<Result<TokensResponse>> GenerateTokensAsync(
-        User user, string ipAddress, CancellationToken ct)
+        User user, IEnumerable<string> roles, string ipAddress, CancellationToken ct)
     {
         if (user == null)
         {
@@ -224,7 +224,7 @@ public class AuthService : LoggingService<AuthService>, IAuthService
         }
 
         ct.ThrowIfCancellationRequested();
-        var token = _jwtService.GenerateToken(user);
+        var token = _jwtService.GenerateToken(user, roles);
         var refreshToken = _jwtService.GenerateRefreshToken();
 
         var newRefreshToken = new RefreshToken

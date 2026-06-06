@@ -15,7 +15,7 @@ public interface IContentService
     Task<Result<EpisodeInfo>> GetEpisodeByIdAsync(int episodeId, CancellationToken ct);
 
     Task<Result<IEnumerable<TitleShortInfo>>> SearchTitlesAsync(
-        string searchTerm, int pageSize, int page, CancellationToken ct);
+        string searchTerm, int pageSize, int page, IEnumerable<int> titleTypes, CancellationToken ct);
     
     Task<Result<IEnumerable<TitleShortInfo>>> FilterTitlesAsync(
         FilterRequest filterOptions, CancellationToken ct);

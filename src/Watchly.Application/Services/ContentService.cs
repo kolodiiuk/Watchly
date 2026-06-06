@@ -118,7 +118,10 @@ public class ContentService : IContentService
                             e.Votes.Any() ? (float)e.Votes.Average(v => v.Value) : 0
                         )).ToList()
                     )).ToList(),
-                    t.TitleSpokenLanguages.Select(sl => sl.SpokenLanguage.Name).ToList()
+                    t.TitleSpokenLanguages.Select(sl => sl.SpokenLanguage.Name).ToList(),
+                    t.TitleGenres.Select(g => g.GenreId).ToList(),
+                    t.TitleProductionCompanies.Select(pc => pc.ProductionCompanyId).ToList(),
+                    t.TitleSpokenLanguages.Select(sl => sl.SpokenLanguageId).ToList()
                 );
 
             TitleInfo result = await query.FirstOrDefaultAsync(ct);
@@ -182,20 +185,28 @@ public class ContentService : IContentService
         string searchTerm,
         int pageSize,
         int page,
+        IEnumerable<int> titleTypes,
         CancellationToken ct = default)
     {
         var pattern = $"%{searchTerm}%";
         try
         {
             var query = _dbContext.Titles
-                .Where(t => EF.Functions.ILike(t.Name, pattern))
+                .Where(t => EF.Functions.ILike(t.Name, pattern));
+
+            if (titleTypes?.Any() == true)
+            {
+                query = query.Where(t => titleTypes.Contains((int)t.ContentType));
+            }
+
+            var results = query
                 .OrderBy(t => t.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating))
+                .Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating, t.ReleaseDate, t.ContentType))
                 .AsNoTracking();
 
-            return Result<IEnumerable<TitleShortInfo>>.Success(await query.ToListAsync(ct));
+            return Result<IEnumerable<TitleShortInfo>>.Success(await results.ToListAsync(ct));
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -219,7 +230,7 @@ public class ContentService : IContentService
             var tsi = query
                 .Skip((filterOptions.Page - 1) * filterOptions.Size)
                 .Take(filterOptions.Size)
-                .Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating))
+                .Select(t => new TitleShortInfo(t.Id, t.Name, t.PosterUrl, t.AvgTmdbRating, t.ReleaseDate, t.ContentType))
                 .AsNoTracking();
             var results = await tsi.ToListAsync(ct);
 

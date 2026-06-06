@@ -17,6 +17,7 @@ public class CommentServiceIntegrationTests : IClassFixture<DatabaseFixture>, IA
     private Guid UserId1 = Guid.NewGuid();
     private Guid UserId2 = Guid.NewGuid();
     private int TitleId = 100;
+    private const int TvShowId = 300;
     private int EpisodeId = 200;
 
     public CommentServiceIntegrationTests(DatabaseFixture fixture)
@@ -33,7 +34,9 @@ public class CommentServiceIntegrationTests : IClassFixture<DatabaseFixture>, IA
                 .AddDbContext<WatchlyDbContext>(options => options.UseNpgsql(_dbFixture.ConnectionString))
                 .BuildServiceProvider().GetService<DbContextOptions<WatchlyDbContext>>()
         );
-
+        await _dbContext.Database.ExecuteSqlRawAsync("CREATE EXTENSION IF NOT EXISTS pg_trgm;");
+        await _dbContext.Database.MigrateAsync();
+        await DatabaseFixture.ResetDatabaseAsync(_dbContext);
         _commentService = new CommentService(_dbContext);
         await _dbContext.Database.EnsureCreatedAsync();
         await SeedDataAsync();
@@ -56,14 +59,17 @@ public class CommentServiceIntegrationTests : IClassFixture<DatabaseFixture>, IA
         // 2. Seed Content (Title, Season, and Episode)
         var title = new Title
             { Id = TitleId, Name = "Test Movie", Overview = "Test overview", UpdatedAt = DateTime.UtcNow };
+        var tvShow = new Title
+            { Id = TvShowId, Name = "Tv show", Overview = "Test overview tv show", UpdatedAt = DateTime.UtcNow };
         var season = new Season { Id = 1, OrdinalNumber = 1, Name = "Season 1", TitleId = TitleId };
         var episode = new Episode
         {
-            Id = EpisodeId, SeasonId = season.Id, OrdinalNumber = 1, Name = "Test Scene", Runtime = 30,
+            Id = EpisodeId, SeasonId = season.Id, TvShowId = TvShowId, OrdinalNumber = 1, Name = "Test Scene", Runtime = 30,
             UpdatedAt = DateTime.UtcNow
         };
 
         _dbContext.Titles.Add(title);
+        _dbContext.Titles.Add(tvShow);
         _dbContext.Seasons.Add(season);
         _dbContext.Episodes.Add(episode);
         await _dbContext.SaveChangesAsync();
@@ -95,7 +101,6 @@ public class CommentServiceIntegrationTests : IClassFixture<DatabaseFixture>, IA
         _dbContext.Comments.AddRange(initialComments);
         await _dbContext.SaveChangesAsync();
     }
-
 
     #region GetCommentsAsync Tests
 

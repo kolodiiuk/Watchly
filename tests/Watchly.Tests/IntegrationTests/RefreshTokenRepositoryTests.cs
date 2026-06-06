@@ -27,7 +27,9 @@ public class RefreshTokenRepositoryTests : IClassFixture<DatabaseFixture>, IAsyn
             .Options;
 
         _dbContext = new WatchlyDbContext(options);
-        await _dbContext.Database.EnsureCreatedAsync();
+        await _dbContext.Database.ExecuteSqlRawAsync("CREATE EXTENSION IF NOT EXISTS pg_trgm;");
+        await _dbContext.Database.MigrateAsync();
+        await DatabaseFixture.ResetDatabaseAsync(_dbContext);
 
         var loggerMock = new Mock<ILogger<RefreshTokenRepository>>();
         _sut = new RefreshTokenRepository(_dbContext, loggerMock.Object);
@@ -35,7 +37,6 @@ public class RefreshTokenRepositoryTests : IClassFixture<DatabaseFixture>, IAsyn
 
     public async Task DisposeAsync()
     {
-        await _dbContext.Database.EnsureDeletedAsync();
         await _dbContext.DisposeAsync();
     }
 

@@ -131,7 +131,8 @@ public class AuthServiceTests
 
         _userManagerMock.Setup(x => x.FindByEmailAsync(email)).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, password)).ReturnsAsync(true);
-        _jwtServiceMock.Setup(x => x.GenerateToken(user)).Returns(accessToken);
+        _userManagerMock.Setup(x => x.GetRolesAsync(user)).ReturnsAsync(new List<string> { "Admin" });
+        _jwtServiceMock.Setup(x => x.GenerateToken(user, It.IsAny<IEnumerable<string>>())).Returns(accessToken);
         _jwtServiceMock.Setup(x => x.GenerateRefreshToken()).Returns(refreshToken);
         _refreshTokenServiceMock
             .Setup(x => x.AddRefreshTokenAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
@@ -194,7 +195,8 @@ public class AuthServiceTests
 
         _userManagerMock.Setup(x => x.FindByEmailAsync(email)).ReturnsAsync(user);
         _userManagerMock.Setup(x => x.CheckPasswordAsync(user, password)).ReturnsAsync(true);
-        _jwtServiceMock.Setup(x => x.GenerateToken(user)).Returns("token");
+        _userManagerMock.Setup(x => x.GetRolesAsync(user)).ReturnsAsync(new List<string> { "Admin" });
+        _jwtServiceMock.Setup(x => x.GenerateToken(user, It.IsAny<IEnumerable<string>>())).Returns("token");
         _jwtServiceMock.Setup(x => x.GenerateRefreshToken()).Returns("refresh");
         _refreshTokenServiceMock
             .Setup(x => x.AddRefreshTokenAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
@@ -388,7 +390,8 @@ public class AuthServiceTests
         _userManagerMock
             .Setup(x => x.FindByIdAsync(user.Id.ToString()))
             .ReturnsAsync(user);
-        _jwtServiceMock.Setup(x => x.GenerateToken(user)).Returns("new_access_token");
+        _userManagerMock.Setup(x => x.GetRolesAsync(user)).ReturnsAsync(new List<string> { "Admin" });
+        _jwtServiceMock.Setup(x => x.GenerateToken(user, It.IsAny<IEnumerable<string>>())).Returns("new_access_token");
         _jwtServiceMock.Setup(x => x.GenerateRefreshToken()).Returns("new_refresh_token");
         _refreshTokenServiceMock
             .Setup(x => x.AddRefreshTokenWithRevocationAsync(
@@ -428,7 +431,8 @@ public class AuthServiceTests
         _userManagerMock
             .Setup(x => x.FindByIdAsync(user.Id.ToString()))
             .ReturnsAsync(user);
-        _jwtServiceMock.Setup(x => x.GenerateToken(user)).Returns(newAccessToken);
+        _userManagerMock.Setup(x => x.GetRolesAsync(user)).ReturnsAsync(new List<string> { "Admin" });
+        _jwtServiceMock.Setup(x => x.GenerateToken(user, It.IsAny<IEnumerable<string>>())).Returns(newAccessToken);
         _jwtServiceMock.Setup(x => x.GenerateRefreshToken()).Returns(newRefreshToken);
         _refreshTokenServiceMock
             .Setup(x => x.AddRefreshTokenWithRevocationAsync(

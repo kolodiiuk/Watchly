@@ -8,5 +8,7 @@ public enum WatchStatus
 
     Completed = 2,
 
-    Dropped = 3
+    Dropped = 3,
+
+    NotWatched = 4
 }
