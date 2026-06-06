@@ -43,6 +43,19 @@ public class VoteController : BaseController<VoteController>
         return Ok();
     }
 
+    [EndpointSummary("Gets current user's vote on a title.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpGet("title/{titleId:int}")]
+    public async Task<IActionResult> GetTitleVoteAsync(int titleId, CancellationToken ct)
+    {
+        if (UserId == Guid.Empty) return Unauthorized();
+
+        var res = await _voteService.GetTitleVoteAsync(titleId, UserId, ct);
+        return res.Failure
+            ? Problem(title: "Get vote failed", detail: res.Error, statusCode: StatusCodes.Status500InternalServerError)
+            : Ok(res.Value);
+    }
+
     [EndpointSummary("Changes a vote on a title.")]
     [EndpointDescription("Updates a user's existing vote or rating for a specific title.")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -93,6 +106,19 @@ public class VoteController : BaseController<VoteController>
         }
 
         return Ok();
+    }
+
+    [EndpointSummary("Gets current user's vote on an episode.")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [HttpGet("episode/{episodeId:int}")]
+    public async Task<IActionResult> GetEpisodeVoteAsync(int episodeId, CancellationToken ct)
+    {
+        if (UserId == Guid.Empty) return Unauthorized();
+
+        var res = await _voteService.GetEpisodeVoteAsync(episodeId, UserId, ct);
+        return res.Failure
+            ? Problem(title: "Get vote failed", detail: res.Error, statusCode: StatusCodes.Status500InternalServerError)
+            : Ok(res.Value);
     }
 
     [EndpointSummary("Changes a vote on an episode.")]

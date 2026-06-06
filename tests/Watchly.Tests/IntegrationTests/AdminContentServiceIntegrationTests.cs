@@ -17,6 +17,9 @@ public class AdminContentServiceIntegrationTests : IClassFixture<DatabaseFixture
     private const int TvShowTitleId = 1100;
     private const int ExistingSeasonId = 2100;
     private const int ExistingEpisodeId = 3100;
+    private const int GenreId = 4100;
+    private const int SpokenLanguageId = 4200;
+    private const int ProductionCompanyId = 4300;
 
     private readonly DatabaseFixture _fixture;
     private WatchlyDbContext _dbContext = null!;
@@ -65,7 +68,10 @@ public class AdminContentServiceIntegrationTests : IClassFixture<DatabaseFixture
             Actors: null,
             LocalizationLanguages: null,
             HomePage: null,
-            AvgTmdbRating: 8.7f);
+            AvgTmdbRating: 8.7f,
+            GenreIds: [GenreId],
+            SpokenLanguageIds: [SpokenLanguageId],
+            ProductionCompanyIds: [ProductionCompanyId]);
 
         var result = await _sut.AddTitleAsync(request, CancellationToken.None);
 
@@ -79,6 +85,9 @@ public class AdminContentServiceIntegrationTests : IClassFixture<DatabaseFixture
         Assert.Equal(string.Empty, saved.LocalizationLanguages);
         Assert.Equal(string.Empty, saved.HomePage);
         Assert.False(saved.IsDeleted);
+        Assert.True(await _dbContext.TitleGenres.AnyAsync(item => item.TitleId == saved.Id && item.GenreId == GenreId));
+        Assert.True(await _dbContext.TitleSpokenLanguages.AnyAsync(item => item.TitleId == saved.Id && item.SpokenLanguageId == SpokenLanguageId));
+        Assert.True(await _dbContext.TitleProductionCompanies.AnyAsync(item => item.TitleId == saved.Id && item.ProductionCompanyId == ProductionCompanyId));
     }
 
     [Fact]
@@ -96,7 +105,10 @@ public class AdminContentServiceIntegrationTests : IClassFixture<DatabaseFixture
             Actors: null,
             LocalizationLanguages: null,
             HomePage: null,
-            AvgTmdbRating: 7.1f);
+            AvgTmdbRating: 7.1f,
+            GenreIds: [GenreId],
+            SpokenLanguageIds: [SpokenLanguageId],
+            ProductionCompanyIds: [ProductionCompanyId]);
 
         var result = await _sut.UpdateTitleAsync(MovieTitleId, request, CancellationToken.None);
 
@@ -109,6 +121,33 @@ public class AdminContentServiceIntegrationTests : IClassFixture<DatabaseFixture
         Assert.True(updated.IsAdult);
         Assert.Equal(string.Empty, updated.Tagline);
         Assert.Equal(string.Empty, updated.Director);
+        Assert.True(await _dbContext.TitleGenres.AnyAsync(item => item.TitleId == MovieTitleId && item.GenreId == GenreId));
+        Assert.True(await _dbContext.TitleSpokenLanguages.AnyAsync(item => item.TitleId == MovieTitleId && item.SpokenLanguageId == SpokenLanguageId));
+        Assert.True(await _dbContext.TitleProductionCompanies.AnyAsync(item => item.TitleId == MovieTitleId && item.ProductionCompanyId == ProductionCompanyId));
+    }
+
+    [Fact]
+    public async Task GetTitleReferenceOptionsAsync_ReturnsExistingOptionsAndFiltersCompanies()
+    {
+        var result = await _sut.GetTitleReferenceOptionsAsync("studio", [ProductionCompanyId], CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Contains(result.Value.Genres, item => item.Id == GenreId);
+        Assert.Contains(result.Value.SpokenLanguages, item => item.Id == SpokenLanguageId);
+        Assert.Contains(result.Value.ProductionCompanies, item => item.Id == ProductionCompanyId);
+    }
+
+    [Fact]
+    public async Task AddTitleAsync_WhenReferenceIdDoesNotExist_ReturnsFailure()
+    {
+        var request = new CreateTitleRequest(
+            "Invalid refs", "Overview", TitleType.Movie, 90, false, null, null, null, null, null, null, null, null,
+            GenreIds: [999999]);
+
+        var result = await _sut.AddTitleAsync(request, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("genres do not exist", result.Error);
     }
 
     [Fact]
@@ -304,6 +343,21 @@ public class AdminContentServiceIntegrationTests : IClassFixture<DatabaseFixture
 
     private async Task SeedBaselineAsync()
     {
+        if (!await _dbContext.Genres.AnyAsync(item => item.Id == GenreId))
+        {
+            _dbContext.Genres.Add(new Genre { Id = GenreId, Name = "Drama" });
+        }
+
+        if (!await _dbContext.SpokenLanguages.AnyAsync(item => item.Id == SpokenLanguageId))
+        {
+            _dbContext.SpokenLanguages.Add(new SpokenLanguage { Id = SpokenLanguageId, Name = "English" });
+        }
+
+        if (!await _dbContext.Set<ProductionCompany>().AnyAsync(item => item.Id == ProductionCompanyId))
+        {
+            _dbContext.Set<ProductionCompany>().Add(new ProductionCompany { Id = ProductionCompanyId, Name = "Watchly Studio" });
+        }
+
         _dbContext.Titles.AddRange(
             new Title
             {

@@ -34,10 +34,11 @@ public sealed class CatalogController : BaseController<CatalogController>
         [FromQuery(Name = "term")] string searchTerm,
         [FromQuery(Name = "page")] int page = 1,
         [FromQuery(Name = "pageSize")] int pageSize = 20,
+        [FromQuery(Name = "titleTypes")] int[] titleTypes = null,
         CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        var res = await _contentService.SearchTitlesAsync(searchTerm, pageSize, page, ct);
+        var res = await _contentService.SearchTitlesAsync(searchTerm, pageSize, page, titleTypes, ct);
         if (res.Failure)
         {
             Log(LogLevel.Error, CatalogControllerEventIds.SearchFailed, "Search for term {term} failed: {error}",

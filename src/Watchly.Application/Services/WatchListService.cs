@@ -397,6 +397,8 @@ public sealed class WatchListService : IWatchListService
         ct.ThrowIfCancellationRequested();
         try
         {
+            _ = GetUserDefaultWatchListId(userId);
+
             var watchLists = await _dbContext.WatchLists
                 .Where(w => w.UserId == userId)
                 .Select(w => new WatchListInfo(

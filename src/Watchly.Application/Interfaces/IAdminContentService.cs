@@ -7,6 +7,11 @@ public interface IAdminContentService
 {
     Task<Result<int>> AddTitleAsync(CreateTitleRequest request, CancellationToken ct = default);
 
+    Task<Result<TitleReferenceOptions>> GetTitleReferenceOptionsAsync(
+        string? productionCompanyTerm,
+        IReadOnlyCollection<int>? selectedProductionCompanyIds,
+        CancellationToken ct = default);
+
     Task<Result> UpdateTitleAsync(int titleId, UpdateTitleRequest request, CancellationToken ct = default);
 
     Task<Result> UploadPosterAsync(int titleId, Stream posterStream, CancellationToken ct = default);

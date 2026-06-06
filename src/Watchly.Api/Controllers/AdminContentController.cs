@@ -18,6 +18,23 @@ public sealed class AdminContentController : BaseController<AdminContentControll
         _adminContentService = adminContentService;
     }
 
+    [HttpGet("title-reference-options")]
+    public async Task<ActionResult<TitleReferenceOptions>> GetTitleReferenceOptionsAsync(
+        [FromQuery] string? productionCompanyTerm,
+        [FromQuery] int[]? selectedProductionCompanyIds,
+        CancellationToken ct = default)
+    {
+        var res = await _adminContentService.GetTitleReferenceOptionsAsync(
+            productionCompanyTerm,
+            selectedProductionCompanyIds,
+            ct);
+
+        return res.Failure
+            ? Problem(title: "Get title reference options failed", detail: res.Error,
+                statusCode: StatusCodes.Status400BadRequest)
+            : Ok(res.Value);
+    }
+
     [HttpPost("titles")]
     public async Task<IActionResult> AddTitleAsync([FromBody] CreateTitleRequest request, CancellationToken ct = default)
     {

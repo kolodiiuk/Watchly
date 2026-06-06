@@ -14,5 +14,8 @@ public sealed record UpdateTitleRequest(
     string? Actors,
     string? LocalizationLanguages,
     string? HomePage,
-    float? AvgTmdbRating
+    float? AvgTmdbRating,
+    IReadOnlyCollection<int>? GenreIds = null,
+    IReadOnlyCollection<int>? SpokenLanguageIds = null,
+    IReadOnlyCollection<int>? ProductionCompanyIds = null
 );
