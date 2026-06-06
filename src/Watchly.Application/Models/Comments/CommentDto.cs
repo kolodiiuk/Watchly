@@ -9,5 +9,6 @@ public sealed record CommentDto(
     Guid UserId,
     DateTime UpdatedAt,
     string Text,
-    UserDto User);
+    UserDto User
+    );
 
