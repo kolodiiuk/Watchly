@@ -86,7 +86,7 @@ public class ContentService : IContentService
         {
             var query =
                 from t in _dbContext.Titles
-                where t.Id == titleId
+                where t.Id == titleId && t.IsDeleted == false
                 select new TitleInfo(
                     t.Id,
                     t.ReleaseDate,
@@ -145,7 +145,7 @@ public class ContentService : IContentService
         {
             var query =
                 from e in _dbContext.Episodes
-                where e.Id == episodeId
+                where e.Id == episodeId && e.IsDeleted == false
                 select new EpisodeInfo(
                     e.Id,
                     e.SeasonId,
@@ -192,7 +192,7 @@ public class ContentService : IContentService
         try
         {
             var query = _dbContext.Titles
-                .Where(t => EF.Functions.ILike(t.Name, pattern));
+                .Where(t => t.IsDeleted == false && EF.Functions.ILike(t.Name, pattern));
 
             if (titleTypes?.Any() == true)
             {
@@ -263,6 +263,7 @@ public class ContentService : IContentService
 
     private static IQueryable<Title> ApplyFilters(IQueryable<Title> query, FilterRequest filterOptions)
     {
+        query = query.Where(t => t.IsDeleted == false);
         if (filterOptions.Genres?.Any() == true)
         {
             query = query.Where(t => t.TitleGenres.Any(tg => filterOptions.Genres.Contains(tg.GenreId)));

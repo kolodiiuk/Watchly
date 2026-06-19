@@ -219,10 +219,10 @@ public sealed class AdminContentService : IAdminContentService
         }
     }
 
-    private async Task<string?> ValidateReferenceIdsAsync(
-        IReadOnlyCollection<int>? genreIds,
-        IReadOnlyCollection<int>? spokenLanguageIds,
-        IReadOnlyCollection<int>? productionCompanyIds,
+    private async Task<string> ValidateReferenceIdsAsync(
+        IReadOnlyCollection<int> genreIds,
+        IReadOnlyCollection<int> spokenLanguageIds,
+        IReadOnlyCollection<int> productionCompanyIds,
         CancellationToken ct)
     {
         var genres = DistinctIds(genreIds);

@@ -50,7 +50,7 @@ public sealed class CatalogController : BaseController<CatalogController>
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        return res.Value.Any() ? StatusCode(StatusCodes.Status200OK, res.Value) : StatusCode(404);
+        return StatusCode(StatusCodes.Status200OK, res.Value);
     }
 
     [EndpointSummary("Filters titles.")]
@@ -78,7 +78,7 @@ public sealed class CatalogController : BaseController<CatalogController>
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        return res.Value.Any() ? StatusCode(StatusCodes.Status200OK, res.Value) : StatusCode(404);
+        return StatusCode(StatusCodes.Status200OK, res.Value);
     }
 
     [EndpointSummary("Gets keyword suggestions.")]
@@ -106,7 +106,7 @@ public sealed class CatalogController : BaseController<CatalogController>
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        return res.Value.Any() ? StatusCode(StatusCodes.Status200OK, res.Value) : StatusCode(404);
+        return StatusCode(StatusCodes.Status200OK, res.Value);
     }
 
     [EndpointSummary("Gets spoken languages.")]
@@ -131,7 +131,7 @@ public sealed class CatalogController : BaseController<CatalogController>
                 statusCode: StatusCodes.Status404NotFound);
         }
 
-        return res.Value.Any() ? StatusCode(StatusCodes.Status200OK, res.Value) : StatusCode(404);
+        return StatusCode(StatusCodes.Status200OK, res.Value);
     }
 
     [EndpointSummary("Gets a specific title.")]
