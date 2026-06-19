@@ -186,11 +186,12 @@ public sealed class CommentService : ICommentService
                 c.UserId,
                 c.UpdatedAt,
                 c.Text,
-                new UserDto()
+                new UserDto
                 {
                     Id = c.User.Id,
                     Email = c.User.Email,
-                    UserName = c.User.UserName
+                    UserName = c.User.UserName,
+                    ProfilePicture = c.User.ProfilePictureUrl
                 }));
 
         return comments;
@@ -213,7 +214,8 @@ public sealed class CommentService : ICommentService
                 {
                     Id = c.User.Id,
                     Email = c.User.Email,
-                    UserName = c.User.UserName
+                    UserName = c.User.UserName,
+                    ProfilePicture = c.User.ProfilePictureUrl
                 }));
 
         return comments;
