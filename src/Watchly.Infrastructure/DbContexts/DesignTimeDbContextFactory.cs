@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace Watchly.Infrastructure.DbContexts;
 
@@ -8,8 +9,8 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<WatchlyDbC
     public WatchlyDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<WatchlyDbContext>();
-        optionsBuilder.UseNpgsql(
-            "Host=localhost;Port=5432;Database=watchly;Username=nk;Password=G4thgw4GRETG%WEgrdfe45");
+        var connectionString = DotNetEnv.Env.GetString("ConnectionStrings__DefaultConnection");
+        optionsBuilder.UseNpgsql(connectionString);
 
         return new WatchlyDbContext(optionsBuilder.Options);
     }
